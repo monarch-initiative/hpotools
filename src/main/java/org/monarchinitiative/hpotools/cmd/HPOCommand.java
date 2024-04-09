@@ -2,8 +2,9 @@ package org.monarchinitiative.hpotools.cmd;
 
 
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
+import org.monarchinitiative.phenol.io.OntologyLoader;
+import org.monarchinitiative.phenol.ontology.data.Ontology;
 import picocli.CommandLine;
-
 
 import java.io.File;
 import java.util.HashMap;
@@ -39,5 +40,9 @@ public abstract class HPOCommand {
         return f;
     }
 
+    protected Ontology getHpOntology() {
+        File f = getHpoJsonFile();
+        return OntologyLoader.loadOntology(f);
+    }
 
 }
