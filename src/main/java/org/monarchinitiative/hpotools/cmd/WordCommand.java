@@ -2,10 +2,13 @@ package org.monarchinitiative.hpotools.cmd;
 
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import org.monarchinitiative.hpotools.analysis.word.Hpo2Word;
+import org.monarchinitiative.phenol.ontology.data.Ontology;
+import org.monarchinitiative.phenol.ontology.data.Term;
+import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -22,14 +25,15 @@ import picocli.CommandLine;
 public class WordCommand extends HPOCommand implements Callable<Integer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WordCommand.class);
 
-    private final String DEFAULT_OUTPUTNAME="hpotest.word";
-    private static String DEFAULT_START_TERM="HP:0002715";
+    private final String DEFAULT_OUTPUTNAME="hpotest.doc";
+    /** The command will create tables for terms emanating from this term. Default: Abnormal social behavior HP:0012433 */
+    private static String DEFAULT_START_TERM="HP:0012433";
 
     @CommandLine.Option(names={"--startterm"})
-    private String startTerm=DEFAULT_START_TERM;
+    private String startTermId =DEFAULT_START_TERM;
 
     @CommandLine.Option(names={"-o", "--out"})
-    private String outfilename=DEFAULT_OUTPUTNAME;
+    private String outfilename = null;
 
 
 
@@ -40,12 +44,21 @@ public class WordCommand extends HPOCommand implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        File hpoJsonFile = getHpoJsonFile();
-        LOGGER.info("running Word command from {}", startTerm, hpoJsonFile.getAbsolutePath());
-        System.exit(1);
+        Ontology hpOntology = getHpOntology();
+        TermId hpoId = TermId.of(startTermId);
+        Optional<Term> opt = hpOntology.termForTermId(hpoId);
+        if (opt.isEmpty()) {
+            System.err.printf("[ERROR] No HPO term found for %s.\n", startTermId);
+        }
+        Term targetTerm = opt.get();
+        if (outfilename == null) {
+            String name = targetTerm.getName().replaceAll(" ", "_");
+            String id = targetTerm.id().getValue().replaceAll(" ", "_");
+            outfilename = String.format("%s_%s.docx", name, id);
+        }
+        LOGGER.info("running Word command from {}", startTermId, getHpoJsonFile().getAbsolutePath());
         try {
-           // Hpo2Word hpo2Word = new Hpo2Word(outfilename, startTerm);
-            File f = new File("sdf");
+           Hpo2Word hpo2Word = new Hpo2Word(outfilename, targetTerm, hpOntology);
         } catch (Exception e) {
             e.printStackTrace();
             return 1;
