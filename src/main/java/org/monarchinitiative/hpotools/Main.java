@@ -1,6 +1,7 @@
 package org.monarchinitiative.hpotools;
 
 import org.monarchinitiative.hpotools.cmd.DownloadCommand;
+import org.monarchinitiative.hpotools.cmd.EncodingCommand;
 import org.monarchinitiative.hpotools.cmd.OnsetCommand;
 import org.monarchinitiative.hpotools.cmd.WordCommand;
 import org.slf4j.Logger;
@@ -21,6 +22,7 @@ public class Main implements Callable<Integer> {
             LOGGER.trace("Starting HPO tools");
             CommandLine cline = new CommandLine(new Main())
                     .addSubcommand("download", new DownloadCommand())
+                    .addSubcommand("encoding", new EncodingCommand())
                     .addSubcommand("onset", new OnsetCommand())
                     .addSubcommand("word", new WordCommand())
                    ;
