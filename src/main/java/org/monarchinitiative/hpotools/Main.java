@@ -1,9 +1,6 @@
 package org.monarchinitiative.hpotools;
 
-import org.monarchinitiative.hpotools.cmd.DownloadCommand;
-import org.monarchinitiative.hpotools.cmd.EncodingCommand;
-import org.monarchinitiative.hpotools.cmd.OnsetCommand;
-import org.monarchinitiative.hpotools.cmd.WordCommand;
+import org.monarchinitiative.hpotools.cmd.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -24,7 +21,8 @@ public class Main implements Callable<Integer> {
                     .addSubcommand("download", new DownloadCommand())
                     .addSubcommand("encoding", new EncodingCommand())
                     .addSubcommand("onset", new OnsetCommand())
-                    .addSubcommand("word", new WordCommand())
+                    .addSubcommand("simhpo", new OnsetCommand())
+                    .addSubcommand("word", new SimHpoCommand())
                    ;
             cline.setToggleBooleanFlags(false);
             int exitCode = cline.execute(args);
