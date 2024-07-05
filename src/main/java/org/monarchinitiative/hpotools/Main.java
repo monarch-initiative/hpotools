@@ -21,8 +21,8 @@ public class Main implements Callable<Integer> {
                     .addSubcommand("download", new DownloadCommand())
                     .addSubcommand("encoding", new EncodingCommand())
                     .addSubcommand("onset", new OnsetCommand())
-                    .addSubcommand("simhpo", new OnsetCommand())
-                    .addSubcommand("word", new SimHpoCommand())
+                    .addSubcommand("simhpo", new SimHpoCommand())
+                    .addSubcommand("word", new WordCommand())
                    ;
             cline.setToggleBooleanFlags(false);
             int exitCode = cline.execute(args);
