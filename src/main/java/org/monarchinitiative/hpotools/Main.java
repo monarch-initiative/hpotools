@@ -1,9 +1,6 @@
 package org.monarchinitiative.hpotools;
 
-import org.monarchinitiative.hpotools.cmd.DownloadCommand;
-import org.monarchinitiative.hpotools.cmd.EncodingCommand;
-import org.monarchinitiative.hpotools.cmd.OnsetCommand;
-import org.monarchinitiative.hpotools.cmd.WordCommand;
+import org.monarchinitiative.hpotools.cmd.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -23,7 +20,9 @@ public class Main implements Callable<Integer> {
             CommandLine cline = new CommandLine(new Main())
                     .addSubcommand("download", new DownloadCommand())
                     .addSubcommand("encoding", new EncodingCommand())
+                    .addSubcommand("mondo", new MondoCommand())
                     .addSubcommand("onset", new OnsetCommand())
+                    .addSubcommand("simhpo", new SimHpoCommand())
                     .addSubcommand("word", new WordCommand())
                    ;
             cline.setToggleBooleanFlags(false);
