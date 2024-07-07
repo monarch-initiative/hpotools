@@ -47,6 +47,7 @@ public final class DownloadCommand extends HPOCommand implements Callable<Intege
             BioDownloader downloader = BioDownloader.builder(Path.of(downloadDirectory))
                     .overwrite(overwrite)
                     .hpoJson()
+                    .mondoJson()
                     .hpDiseaseAnnotations()
                     .geneInfoHuman()
                     .medgene2MIM()

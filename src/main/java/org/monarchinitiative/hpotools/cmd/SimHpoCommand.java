@@ -42,12 +42,17 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
         if (annotpath==null) {
             throw new PhenolRuntimeException("Need to specify annotpath path");
         }
+        File annotFile = new File(annotpath);
+        if (!annotFile.exists()) {
+            throw new PhenolRuntimeException("Did not find annotation file at " + annotpath);
+        }
 
         Ontology ontology = OntologyLoader.loadOntology(new File(hpopath));
 
         HpoDiseaseLoaderOptions options = HpoDiseaseLoaderOptions.of(Set.of(DiseaseDatabase.OMIM), false, 5);
         HpoDiseaseLoader loader = HpoDiseaseLoaders.defaultLoader(ontology, options);
-        HpoDiseases diseases = loader.load(Path.of(annotpath));
+        Path annotpath = annotFile.toPath();
+        HpoDiseases diseases = loader.load(annotpath);
 
         SimulatedHpoDiseaseGenerator generator = new SimulatedHpoDiseaseGenerator(diseases, ontology);
         TermId diseaseId = TermId.of("OMIM", omimIdentifier);
