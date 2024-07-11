@@ -229,6 +229,7 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <!--
                         <configuration>
                             <transformers>
                                 <transformer
@@ -239,7 +240,7 @@
                                     </manifestEntries>
                                 </transformer>
                             </transformers>
-                        </configuration>
+                        </configuration> -->
                     </execution>
                 </executions>
             </plugin>

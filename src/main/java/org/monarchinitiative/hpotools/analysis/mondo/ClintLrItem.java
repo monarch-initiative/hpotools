@@ -1,4 +1,4 @@
-package org.monarchinitiative.hpotools.analysis;
+package org.monarchinitiative.hpotools.analysis.mondo;
 
 
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;

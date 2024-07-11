@@ -1,6 +1,9 @@
 package org.monarchinitiative.hpotools.analysis;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
@@ -8,7 +11,7 @@ import java.util.regex.Pattern;
 
 
 public class EncodingCheck {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncodingCheck.class);
     private final String pattern = "(HP_\\d+)";
     private final Pattern HPO_TERM_PATTERN = Pattern.compile(pattern);
     private final File hpoOwlFile;
@@ -35,7 +38,7 @@ public class EncodingCheck {
                 checkLine(line, ++i, hp_term);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Could not read hpo owl file", e);
         }
     }
 

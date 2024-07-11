@@ -1,8 +1,11 @@
 package org.monarchinitiative.hpotools.cmd;
 
-import org.monarchinitiative.hpotools.analysis.ClintLrItem;
+import org.monarchinitiative.hpotools.analysis.mondo.ClintLrItem;
 import org.monarchinitiative.hpotools.analysis.OntologyTerm;
-import org.monarchinitiative.hpotools.analysis.PpktStoreItem;
+import org.monarchinitiative.hpotools.analysis.mondo.MondoClintlrItem;
+import org.monarchinitiative.hpotools.analysis.mondo.PpktResolver;
+import org.monarchinitiative.hpotools.analysis.mondo.PpktStoreItem;
+import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Dbxref;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
@@ -26,30 +29,30 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
     @CommandLine.Option(names={"--mondo"}, description = "path to mondo.json")
     private String mondopath ="data/mondo.json";
 
-    @CommandLine.Option(names={"--clintlr"}, description = "path to mondo.json")
-    private String clintltpath ="../ClintLR/scripts/DiseaseIntuitionGroupsTsv.tsv";
+    @CommandLine.Option(names={"--clintlr"},
+            required = true,
+            description = "path to mondo.json")
+    private String clintltpath;
 
-    @CommandLine.Option(names={"--allppkt"}, description = "path to mondo.json")
-    private String all_phenopackets ="/Users/robin/data/allppkt0_1_15/all_phenopackets.tsv";
+    /**
+     * Use this argument for the directory. We expect to find a file called
+     * all_phenopackets.tsv at the top level of this directory.
+     */
+    @CommandLine.Option(names={"--allppkt"},
+            required = true,
+            description = "path to directory of phenopackets")
+    private File all_phenopackets ;
 
 
 
     @Override
     public Integer call() throws Exception {
-        //api
-        System.out.println(org.apache.logging.log4j.Logger.class.getResource("/org/apache/logging/log4j/Logger.class"));
-//core
-        System.out.println(org.apache.logging.log4j.Logger.class.getResource("/org/apache/logging/log4j/core/Appender.class"));
-//config
-        System.out.println(org.apache.logging.log4j.Logger.class.getResource("/log4j2.xml"));
-        if (1+1==2) {
-            LOGGER.error("crap");
-            System.exit(1);
+        File all_ppkt_tsv = new File(all_phenopackets + File.separator + "all_phenopackets.tsv");
+        if (!all_ppkt_tsv.exists()) {
+            throw new PhenolRuntimeException("Could not find all_phenopackets.tsv");
         }
-
-
-
-        List<PpktStoreItem> ppktList = parseNewPhenopackets();
+        List<PpktStoreItem> ppktList = parseNewPhenopackets(all_ppkt_tsv);
+        PpktResolver resolver = new PpktResolver(all_phenopackets, ppktList);
         Ontology mondo = OntologyLoader.loadOntology(new File(mondopath));
         LOGGER.info("Mondo version {}", mondo.version().orElse("n/a"));
         List<ClintLrItem> items = ClintLrItem.fromFile(clintltpath);
@@ -57,17 +60,13 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
                 .map(ClintLrItem::getMondoId)
                 .collect(Collectors.toSet());
         LOGGER.info("Parse a total of {} ClintLR entries", clintLrTermIds.size());
-        // Set of all PMIDs
         Map<TermId, OntologyTerm> toNarrowMap = new HashMap<>();
-      //  Map<TermId, OntologyTerm> toBroadMap = new HashMap<>();
         Map<TermId, TermId> omimToMondoMap = new HashMap<>();
         Map<TermId, TermId> narrowToBroadMap = new HashMap<>();
         for (ClintLrItem item : items) {
             OntologyTerm narrow = new OntologyTerm(item.getNarrowId(), item.getNarrowLabel());
-            OntologyTerm broad = new OntologyTerm(item.getBroadId(), item.getBroadLabel());
             TermId mondoId = item.getMondoId();
             toNarrowMap.put(mondoId, narrow);
-          //  toBroadMap.put(mondoId, broad);
             narrowToBroadMap.put(item.getNarrowId(), item.getBroadId());
         }
         LOGGER.info("toNarrowMap: ClintLR to narrow entries {}", toNarrowMap.size());
@@ -90,7 +89,8 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
         LOGGER.info("We got {} to narrow candidates.",  toNarrowMap.size());
         LOGGER.info("We got {} OMIM to MONDO mappings.",  omimToMondoMap.size());
         // Now see how many of the phenopackets have narrow mappings
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter("candidates.tsv"))) {
+        List<MondoClintlrItem> mcItemList = new ArrayList<>();
+
             for (PpktStoreItem item : ppktList) {
                 if (omimToMondoMap.containsKey(item.disease_id())) {
                     TermId omimId = item.disease_id();
@@ -114,22 +114,24 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
                             if (optTerm.isPresent()) {
                                 broadLabel = optTerm.get().getName();
                             }
-                           List<String> fields = List.of(omimId.getValue(),
-                                   mondoId.getValue(),
-                                   mondoLabel,
-                                   narrowId,
-                                   narrowLabel,
-                                   broadId,
-                                   broadLabel,
-                                   item.filename());
-                            bw.write(String.join("\t", fields) + "\n");
+
+                            File ppktFile = resolver.getFile(item.filename());
+                            MondoClintlrItem mcitem = new MondoClintlrItem(omimId,
+                                    mondoId,
+                                    mondoLabel,
+                                    TermId.of(narrowId),
+                                    narrowLabel,
+                                    TermId.of(broadId),
+                                    broadLabel,
+                                    item.cohort(),
+                                    ppktFile);
+                            mcItemList.add(mcitem);
+
                         }
                     }
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        resolver.outputFiles("candidates", mcItemList);
 
         return 0;
     }
@@ -193,17 +195,15 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
      * pehnopackets
      * disease - disease_id -- patient_id -- gene -- allele1 -- allele2 -- PMID
      */
-    public List<PpktStoreItem> parseNewPhenopackets() {
+    public List<PpktStoreItem> parseNewPhenopackets(File all_ppkt_tsv) {
         List<PpktStoreItem> items = new ArrayList<>();
-
-        try (BufferedReader br = new BufferedReader(new FileReader(all_phenopackets))){
+        try (BufferedReader br = new BufferedReader(new FileReader(all_ppkt_tsv))){
             String line = br.readLine(); // discard header
             while( (line = br.readLine()) != null ) {
                Optional<PpktStoreItem> opt = PpktStoreItem.fromLine(line);
                opt.ifPresent(items::add);
             }
         } catch (IOException e) {
-            e.printStackTrace();
             LOGGER.error("Could not find file at {}", all_phenopackets);
             System.exit(1);
         }

@@ -13,6 +13,8 @@ import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Term;
 import org.monarchinitiative.phenol.ontology.data.TermId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.*;
@@ -26,6 +28,7 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true,
         description = "Calculate number of diseases with onset data")
 public class OnsetCommand extends HPOCommand implements Callable<Integer> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OnsetCommand.class);
     /** Terms such as Polydactyly that have a certain assignment to an age of onset (Congenital is taken
      * here to comprise also antenatal). The map is derived from the file {@code term2onset.txt} in the
      * resources section.
@@ -119,7 +122,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
             return 1;
         }
         System.out.printf("[INFO] Inferred congenital onset for %d diseases.\n", n_inferred);
@@ -146,7 +149,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
                 termSet.add(hpoId);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
         // get all agenesis terms
         for (Term term : ontology.getTerms()) {

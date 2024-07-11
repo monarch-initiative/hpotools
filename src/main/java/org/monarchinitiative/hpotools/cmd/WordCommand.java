@@ -59,7 +59,7 @@ public class WordCommand extends HPOCommand implements Callable<Integer> {
         try {
            Hpo2Word hpo2Word = new Hpo2Word(outfilename, targetTerm, hpOntology);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
             return 1;
         }
         return 0;
