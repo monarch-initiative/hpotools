@@ -170,7 +170,8 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
 
         Set<TermId> TermSetWithDescendants = new HashSet<>();
         for (TermId tid : termSet) {
-            for (var hpoId: ontology.graph().getDescendants(tid, true)) {
+            TermSetWithDescendants.add(tid);
+            for (var hpoId: ontology.graph().getDescendants(tid)) {
                 TermSetWithDescendants.add(hpoId);
             }
         }

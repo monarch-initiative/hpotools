@@ -1,6 +1,7 @@
 package org.monarchinitiative.hpotools.analysis.mondo;
 
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
+import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,6 @@ public class PpktResolver {
             String cohort = ppktStoreItem.cohort();
             String fname = ppktStoreItem.filename();
             File f = new File(ppktDir + File.separator + cohort + File.separator + fname);
-            System.out.println(f.getAbsolutePath());
             if (!f.exists()) {
                 // should never happen
                 String errMsg = String.format("Could not find phenopacket file at %s",
@@ -90,6 +90,5 @@ public class PpktResolver {
                 throw new PhenolRuntimeException("Could not find file: " + source.getAbsolutePath(), e);
             }
     }
-
 
 }
