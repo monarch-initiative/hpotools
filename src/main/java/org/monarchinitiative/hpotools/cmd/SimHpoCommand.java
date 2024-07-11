@@ -12,6 +12,8 @@ import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.phenopackets.schema.v2.Phenopacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -24,7 +26,7 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true,
         description = "Calculate number of diseases with onset data")
 public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
-
+    private final static Logger LOGGER = LoggerFactory.getLogger(SimHpoCommand.class);
 
     /** default Noonan syndrome 1	163950 */
     @CommandLine.Option(names={"--disease"}, description = "OMIM identifer of disease to be simulated", required = true)
@@ -39,6 +41,8 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
         if (hpopath==null) {
             throw new PhenolRuntimeException("Need to specify hp.json path");
         }
+        File hpoFile = new File(hpopath);
+        LOGGER.info("HPO file: {}", hpoFile.getAbsolutePath());
         if (annotpath==null) {
             throw new PhenolRuntimeException("Need to specify annotpath path");
         }
@@ -46,10 +50,11 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
         if (!annotFile.exists()) {
             throw new PhenolRuntimeException("Did not find annotation file at " + annotpath);
         }
-
-        Ontology ontology = OntologyLoader.loadOntology(new File(hpopath));
-
+        LOGGER.info("Annotation file: {}", annotFile.getAbsolutePath());
+        Ontology ontology = OntologyLoader.loadOntology(hpoFile);
+        LOGGER.info("Loaded HPO file version: {}", ontology.version().orElse("n/a"));
         HpoDiseaseLoaderOptions options = HpoDiseaseLoaderOptions.of(Set.of(DiseaseDatabase.OMIM), false, 5);
+        LOGGER.info("HPOA loader options: {}", options);
         HpoDiseaseLoader loader = HpoDiseaseLoaders.defaultLoader(ontology, options);
         Path annotpath = annotFile.toPath();
         HpoDiseases diseases = loader.load(annotpath);
