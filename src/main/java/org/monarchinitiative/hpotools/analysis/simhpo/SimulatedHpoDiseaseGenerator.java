@@ -1,7 +1,5 @@
 package org.monarchinitiative.hpotools.analysis.simhpo;
 
-import org.apache.poi.sl.draw.geom.GuideIf;
-import org.monarchinitiative.hpotools.cmd.SimHpoCommand;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.TermId;

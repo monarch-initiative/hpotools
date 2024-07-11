@@ -1,5 +1,6 @@
 package org.monarchinitiative.hpotools.analysis;
 
+
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.ontology.data.TermId;
 

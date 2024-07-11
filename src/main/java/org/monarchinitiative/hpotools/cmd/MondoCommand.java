@@ -8,6 +8,8 @@ import org.monarchinitiative.phenol.ontology.data.Dbxref;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.Term;
 import org.monarchinitiative.phenol.ontology.data.TermId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.*;
@@ -19,27 +21,42 @@ import java.util.stream.Collectors;
         mixinStandardHelpOptions = true,
         description = "Output Mondo phenopackets with available narrow/broad Mondo parents")
 public class MondoCommand extends HPOCommand implements Callable<Integer> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MondoCommand.class);
 
     @CommandLine.Option(names={"--mondo"}, description = "path to mondo.json")
     private String mondopath ="data/mondo.json";
-
 
     @CommandLine.Option(names={"--clintlr"}, description = "path to mondo.json")
     private String clintltpath ="../ClintLR/scripts/DiseaseIntuitionGroupsTsv.tsv";
 
     @CommandLine.Option(names={"--allppkt"}, description = "path to mondo.json")
-    private String all_phenopackets ="/Users/robin/data/allppkt0_1_14/all_phenopackets/all_phenopackets.tsv";
+    private String all_phenopackets ="/Users/robin/data/allppkt0_1_15/all_phenopackets.tsv";
 
 
 
     @Override
     public Integer call() throws Exception {
+        //api
+        System.out.println(org.apache.logging.log4j.Logger.class.getResource("/org/apache/logging/log4j/Logger.class"));
+//core
+        System.out.println(org.apache.logging.log4j.Logger.class.getResource("/org/apache/logging/log4j/core/Appender.class"));
+//config
+        System.out.println(org.apache.logging.log4j.Logger.class.getResource("/log4j2.xml"));
+        if (1+1==2) {
+            LOGGER.error("crap");
+            System.exit(1);
+        }
+
+
+
         List<PpktStoreItem> ppktList = parseNewPhenopackets();
         Ontology mondo = OntologyLoader.loadOntology(new File(mondopath));
+        LOGGER.info("Mondo version {}", mondo.version().orElse("n/a"));
         List<ClintLrItem> items = ClintLrItem.fromFile(clintltpath);
         Set<TermId> clintLrTermIds = items.stream()
                 .map(ClintLrItem::getMondoId)
                 .collect(Collectors.toSet());
+        LOGGER.info("Parse a total of {} ClintLR entries", clintLrTermIds.size());
         // Set of all PMIDs
         Map<TermId, OntologyTerm> toNarrowMap = new HashMap<>();
       //  Map<TermId, OntologyTerm> toBroadMap = new HashMap<>();
@@ -53,6 +70,8 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
           //  toBroadMap.put(mondoId, broad);
             narrowToBroadMap.put(item.getNarrowId(), item.getBroadId());
         }
+        LOGGER.info("toNarrowMap: ClintLR to narrow entries {}", toNarrowMap.size());
+        LOGGER.info("NarrowToBroadMap: entries derived from ClintLR {}", narrowToBroadMap.size());
         for (TermId mondoId: mondo.nonObsoleteTermIds()) {
             if (! mondoId.getPrefix().equals("MONDO")) continue; // skip other ontology terms
             Optional<Term> narrowParent = getNarrowParentWithOmimPs(mondoId, mondo);
@@ -68,18 +87,14 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
                 omimToMondoMap.put(omim, mondoId);
             }
         }
-        System.out.printf("We got %d to narrow candidates.\n",  toNarrowMap.size());
-        System.out.printf("We got %d OMIM to MONDO mappings.\n",  omimToMondoMap.size());
+        LOGGER.info("We got {} to narrow candidates.",  toNarrowMap.size());
+        LOGGER.info("We got {} OMIM to MONDO mappings.",  omimToMondoMap.size());
         // Now see how many of the phenopackets have narrow mappings
         try (BufferedWriter bw = new BufferedWriter(new FileWriter("candidates.tsv"))) {
             for (PpktStoreItem item : ppktList) {
                 if (omimToMondoMap.containsKey(item.disease_id())) {
                     TermId omimId = item.disease_id();
                     TermId mondoId = omimToMondoMap.get(omimId);
-                    if (clintLrTermIds.contains(mondoId)) {
-                        System.err.println("Skipping " + mondoId + " because it is already clintlr");
-                        continue;
-                    }
                     Optional<Term> optt = mondo.termForTermId(mondoId);
                     String mondoLabel = "n/a";
                     if (optt.isPresent()) {
@@ -105,7 +120,8 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
                                    narrowId,
                                    narrowLabel,
                                    broadId,
-                                   broadLabel);
+                                   broadLabel,
+                                   item.filename());
                             bw.write(String.join("\t", fields) + "\n");
                         }
                     }
@@ -114,12 +130,18 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return 0;
     }
 
+    /**
+     * @param mondoId Mondo Term
+     * @param mondo ontology
+     * @return Omim term id corresponding to the MONDO id (if possible)
+     */
     private Optional<TermId> getOmimIdIfPossible(TermId mondoId, Ontology mondo) {
         if (! mondo.containsTerm(mondoId)) {
-            System.out.println("Obsolte");
+            System.out.println("Obsolete");
             return Optional.empty();
         }
         Optional<Term> opt = mondo.termForTermId(mondoId);
@@ -141,14 +163,15 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
     }
 
     /**
-     * Get the parent of this term IF that parent is a Mondo term with a relevant OMIM PS
+     * Get the parent of this term IF that parent is a Mondo term with a relevant
+     * OMIM PS
      * @param mondoId
      * @param mondo
-     * @return
+     * @return Mondo term that is the narrow parent of the argument if we can find an OMIMPS in the parent
      */
     private Optional<Term> getNarrowParentWithOmimPs(TermId mondoId, Ontology mondo) {
         if (! mondo.containsTerm(mondoId)) {
-            System.out.println("Obsolte");
+            System.out.println("Obsolete term");
             return Optional.empty();
         }
         for (TermId parentId: mondo.graph().getParents(mondoId)) {
@@ -174,18 +197,18 @@ public class MondoCommand extends HPOCommand implements Callable<Integer> {
         List<PpktStoreItem> items = new ArrayList<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(all_phenopackets))){
-            String line = br.readLine(); // discarrd header
+            String line = br.readLine(); // discard header
             while( (line = br.readLine()) != null ) {
                Optional<PpktStoreItem> opt = PpktStoreItem.fromLine(line);
                opt.ifPresent(items::add);
             }
         } catch (IOException e) {
             e.printStackTrace();
+            LOGGER.error("Could not find file at {}", all_phenopackets);
+            System.exit(1);
         }
         System.out.printf("Parsed %d new phenopackets.\n", items.size());
         return items;
     }
-
-
 
 }

@@ -1,7 +1,6 @@
 package org.monarchinitiative.hpotools.cmd;
 
 
-import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
