@@ -1,7 +1,6 @@
 package org.monarchinitiative.hpotools.analysis.mondo;
 
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
-import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,7 +8,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +59,7 @@ public class PpktResolver {
                bw.write(mcItem.getTsvLine() + "\n");
            }
         } catch (IOException e) {
-            LOGGER.error("Couldn't write to file: " + summary.getAbsolutePath(), e);
+            LOGGER.error("Couldn't write to file: {}", summary.getAbsolutePath(), e);
         }
         // Copy each of the phenopackets to this directory
         for (MondoClintlrItem mcItem : mcItemList) {
