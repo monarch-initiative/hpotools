@@ -1,3 +1,7 @@
 # hpotools
 
-This is a library of small applications that the HPO project regularly uses for internal purposes. Currently, we are not supporting this library for external users, but anybody is welcome to use it at their own risk. :-0.
+hpotools is a collection of various HPO-based applications.
+
+- [download](download.md)
+- [mondo](mondo.md): This application uses the mondo.json file to characterize collections of GA4GH phenopackets for use in ClintLR simulations.
+- [word](word.md)
