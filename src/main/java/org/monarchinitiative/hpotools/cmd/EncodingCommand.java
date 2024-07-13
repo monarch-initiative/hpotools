@@ -25,7 +25,7 @@ public class EncodingCommand  implements Callable<Integer> {
 
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         if (! hpoOwlFile.isFile()) {
             System.err.printf("[ERROR] could not find hp-edit.owl file at %s\n.", hpoOwlFile.getAbsolutePath());
         }

@@ -8,7 +8,6 @@ import org.monarchinitiative.phenol.annotations.io.hpo.HpoDiseaseLoader;
 import org.monarchinitiative.phenol.annotations.io.hpo.HpoDiseaseLoaderOptions;
 import org.monarchinitiative.phenol.annotations.io.hpo.HpoDiseaseLoaders;
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
-import org.monarchinitiative.phenol.ontology.algo.OntologyAlgorithm;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Term;
@@ -170,7 +169,8 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
 
         Set<TermId> TermSetWithDescendants = new HashSet<>();
         for (TermId tid : termSet) {
-            for (var hpoId: ontology.graph().getDescendants(tid, true)) {
+            TermSetWithDescendants.add(tid);
+            for (var hpoId: ontology.graph().getDescendants(tid)) {
                 TermSetWithDescendants.add(hpoId);
             }
         }

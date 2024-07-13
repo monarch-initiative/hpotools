@@ -8,7 +8,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ public class PpktResolver {
             String cohort = ppktStoreItem.cohort();
             String fname = ppktStoreItem.filename();
             File f = new File(ppktDir + File.separator + cohort + File.separator + fname);
-            System.out.println(f.getAbsolutePath());
             if (!f.exists()) {
                 // should never happen
                 String errMsg = String.format("Could not find phenopacket file at %s",
@@ -61,7 +59,7 @@ public class PpktResolver {
                bw.write(mcItem.getTsvLine() + "\n");
            }
         } catch (IOException e) {
-            LOGGER.error("Couldn't write to file: " + summary.getAbsolutePath(), e);
+            LOGGER.error("Couldn't write to file: {}", summary.getAbsolutePath(), e);
         }
         // Copy each of the phenopackets to this directory
         for (MondoClintlrItem mcItem : mcItemList) {
@@ -90,6 +88,5 @@ public class PpktResolver {
                 throw new PhenolRuntimeException("Could not find file: " + source.getAbsolutePath(), e);
             }
     }
-
 
 }

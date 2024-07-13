@@ -12,7 +12,7 @@ public class TopLevelCommand extends HPOCommand implements Callable<Integer> {
 
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         return 0;
     }
 }

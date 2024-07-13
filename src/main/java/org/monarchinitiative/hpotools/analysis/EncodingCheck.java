@@ -42,7 +42,7 @@ public class EncodingCheck {
         }
     }
 
-    public static void checkLine(String line, int lineno, String previous) throws UnsupportedEncodingException {
+    public static void checkLine(String line, int lineno, String previous) {
         byte[] bytes = line.getBytes(StandardCharsets.ISO_8859_1);
         String decodedLine = new String(bytes);
         if (! line.equals(decodedLine)) {

@@ -49,6 +49,10 @@ public class WordCommand extends HPOCommand implements Callable<Integer> {
         if (opt.isEmpty()) {
             System.err.printf("[ERROR] No HPO term found for %s.\n", startTermId);
         }
+        if (opt.isEmpty()) {
+            LOGGER.error("[ERROR] No term found for {}.", startTermId);
+            return 1;
+        }
         Term targetTerm = opt.get();
         if (outfilename == null) {
             String name = targetTerm.getName().replaceAll(" ", "_");

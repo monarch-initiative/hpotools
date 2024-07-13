@@ -62,10 +62,13 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
         SimulatedHpoDiseaseGenerator generator = new SimulatedHpoDiseaseGenerator(diseases, ontology);
         TermId diseaseId = TermId.of("OMIM", omimIdentifier);
         Optional<Phenopacket> opt = generator.generateSimulatedPhenopacket(diseaseId);
+        // When we get here, we want to output the simulated phenopackets to file
+        // now, the generator is just a skeleton and it always returns Optional.empty()!!!
         if (opt.isPresent()) {
             System.out.println(opt.get());
         } else {
             System.out.println("Could not retrieve phenopacket for \"" + omimIdentifier + "\"");
+            System.out.println("NEED TO IMPLEMENT generateSimulatedPhenopacket()");
         }
 
         return 0;
