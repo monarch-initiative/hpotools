@@ -14,3 +14,12 @@ public class ProportionalRandomSelection<E> {
         this.random = random;
         this.cumulativeProbabilities = cumulativeProbabilities();
     }
+
+    private double[] cumulativeProbabilities() {
+        double[] cumulativeProbabilities = new double[probabilities.length];
+        cumulativeProbabilities[0] = probabilities[0];
+        for (int i = 1; i < probabilities.length; i++) {
+            cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + probabilities[i];
+        }
+        return cumulativeProbabilities;
+    }
