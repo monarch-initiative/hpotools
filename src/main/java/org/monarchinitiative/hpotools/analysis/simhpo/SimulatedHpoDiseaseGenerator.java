@@ -11,18 +11,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.Random;
 
 public class SimulatedHpoDiseaseGenerator {
     private final static Logger LOGGER = LoggerFactory.getLogger(SimulatedHpoDiseaseGenerator.class);
     private final static int DEFAULT_NUMBER_OF_TERMS = 5;
+    private final static int DEFAULT_SEED = 42;
 
     private final HpoDiseases hpoDiseases;
 
     private final Ontology hpoOntology;
+    private final Random random;
 
     public SimulatedHpoDiseaseGenerator(HpoDiseases hpoDiseases, Ontology hpoOntology) {
         this.hpoDiseases = hpoDiseases;
         this.hpoOntology = hpoOntology;
+        this.random = new Random(DEFAULT_SEED);
     }
 
 
@@ -34,11 +38,17 @@ public class SimulatedHpoDiseaseGenerator {
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
             System.out.println(disease);
-            Optional<TemporalInterval> opt = disease.diseaseOnset();
+            Optional<TemporalInterval> optOnsetRange = disease.diseaseOnset();
+            int onset;
             // Add onset to the phenopacket if possible
-            if (opt.isPresent()) {
-                TemporalInterval onset = opt.get();
-                System.out.println(onset);
+            if (optOnsetRange.isPresent()) {
+                TemporalInterval onsetRange = optOnsetRange.get();
+                System.out.println(onsetRange);
+                // choose a random onset from the range
+                int start = onsetRange.start().days();
+                int end = onsetRange.end().days();
+                onset = random.nextInt(start, end + 1); // TODO @pnrobinson: is end inclusive or exclusive?
+                System.out.println("Randomly chosen onset (days): " + onset);
             } else {
                 System.out.println("No onset information available");
             }
