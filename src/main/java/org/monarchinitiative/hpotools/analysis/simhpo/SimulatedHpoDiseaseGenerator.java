@@ -88,6 +88,10 @@ public class SimulatedHpoDiseaseGenerator {
             System.out.println("Probabilities: " + Arrays.toString(probabilities));
 
             // Add n_terms HPO terms to the phenopacket
+            var temp = disease.phenotypicAbnormalities(); // TODO @pnrobinson: all methods regarding phenotypic abnormalities are deprecated, what should be used instead?
+
+
+            // Add annotations to the phenopacket
             List<HpoDiseaseAnnotation> annotations = (List<HpoDiseaseAnnotation>) disease.annotations();
             ProportionalRandomSelection<HpoDiseaseAnnotation> prs = new ProportionalRandomSelection<>(annotations, probabilities, random);
             List<HpoDiseaseAnnotation> selectedAnnotations = prs.sample(n_terms);
