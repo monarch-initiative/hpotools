@@ -10,6 +10,7 @@ import org.phenopackets.schema.v2.Phenopacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -61,7 +62,20 @@ public class SimulatedHpoDiseaseGenerator {
             } else {
                 System.out.println("No onset information available");
             }
+
             // Add random sex except for X-chromosomal recessive inheritance, in which case add male
+           List<TermId> modeOfInheritance = disease.modesOfInheritance();
+            // TODO @pnrobinson: is this the correct HPO term? Should it only be male if it is the only mode of inheritance, or also if there are other modes of inheritance?
+            String xChromosomalRecessiveHPO = "HP:0001419";
+            int male = 2;
+            int sex;
+            if (modeOfInheritance.contains(TermId.of(xChromosomalRecessiveHPO))) {
+                System.out.println("X-chromosomal recessive inheritance");
+                sex = male;
+            } else {
+                sex = random.nextInt(1, 3);
+            }
+            System.out.println("Randomly chosen sex: " + sex);
 
             for (var pf: disease.annotations()) {
                 System.out.printf("freqeuncy of the term %.2f", pf.frequency());
