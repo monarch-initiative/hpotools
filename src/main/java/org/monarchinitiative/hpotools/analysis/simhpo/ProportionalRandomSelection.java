@@ -35,3 +35,13 @@ public class ProportionalRandomSelection<E> {
         }
         return elements[selectedIndex];
     }
+
+    public E[] sample(int n) {
+        E[] selectedElements = (E[]) new Object[n];
+        for (int i = 0; i < n; i++) {
+            selectedElements[i] = sample();
+        }
+        return selectedElements;
+    }
+}
+
