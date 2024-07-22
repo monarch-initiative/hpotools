@@ -36,6 +36,12 @@ public class SimulatedHpoDiseaseGenerator {
             System.out.println(disease);
             Optional<TemporalInterval> opt = disease.diseaseOnset();
             // Add onset to the phenopacket if possible
+            if (opt.isPresent()) {
+                TemporalInterval onset = opt.get();
+                System.out.println(onset);
+            } else {
+                System.out.println("No onset information available");
+            }
             // Add some age to the phenopacket by adding a few years to the onset
             // Add random sex except for X-chromosomal recessive inheritance, in which case add male
 
