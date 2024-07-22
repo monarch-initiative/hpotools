@@ -23,3 +23,15 @@ public class ProportionalRandomSelection<E> {
         }
         return cumulativeProbabilities;
     }
+
+    public E sample() {
+        double r = random.nextDouble();
+        int selectedIndex = 0;
+        for (int i = 0; i < cumulativeProbabilities.length; i++) {
+            if (r <= cumulativeProbabilities[i]) {
+                selectedIndex = i;
+                break;
+            }
+        }
+        return elements[selectedIndex];
+    }
