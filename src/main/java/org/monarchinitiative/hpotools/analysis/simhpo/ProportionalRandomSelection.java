@@ -1,5 +1,7 @@
 package org.monarchinitiative.hpotools.analysis.simhpo;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class ProportionalRandomSelection<E> {
@@ -36,10 +38,10 @@ public class ProportionalRandomSelection<E> {
         return elements[selectedIndex];
     }
 
-    public E[] sample(int n) {
-        E[] selectedElements = (E[]) new Object[n];
+    public List<E> sample(int n) {
+        List<E> selectedElements = new ArrayList<E>();
         for (int i = 0; i < n; i++) {
-            selectedElements[i] = sample();
+            selectedElements.add(sample());
         }
         return selectedElements;
     }
