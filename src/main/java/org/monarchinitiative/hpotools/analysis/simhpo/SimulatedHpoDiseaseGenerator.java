@@ -52,12 +52,10 @@ public class SimulatedHpoDiseaseGenerator {
                  * Just simulate HPO terms, do not simulate age and sex for now, but we could do htis in phenopacket2prompt
                  */
 
-            return Optional.empty(); // return the phenopacket unless there is an error
-
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
-            return Optional.empty();
         }
+        return Optional.empty(); // return the phenopacket unless there is an error
     }
 
 
