@@ -1,16 +1,14 @@
 package org.monarchinitiative.hpotools.analysis.simhpo;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class ProportionalRandomSelection<E> {
-    E[] elements;
+    List<E> elements;
     double[] probabilities;
     double[] cumulativeProbabilities;
     Random random;
 
-    public ProportionalRandomSelection(E[] elements, double[] probabilities, Random random) {
+    public ProportionalRandomSelection(List<E> elements, double[] probabilities, Random random) {
         this.elements = elements;
         this.probabilities = probabilities;
         this.random = random;
@@ -29,13 +27,16 @@ public class ProportionalRandomSelection<E> {
     public E sample() {
         double r = random.nextDouble();
         int selectedIndex = 0;
-        for (int i = 0; i < cumulativeProbabilities.length; i++) {
-            if (r <= cumulativeProbabilities[i]) {
+        Iterator<Double> probIterator = Arrays.stream(cumulativeProbabilities).iterator();
+        int i = 0;
+        while (probIterator.hasNext()) {
+            if (r <= probIterator.next()) {
                 selectedIndex = i;
                 break;
             }
+            i++;
         }
-        return elements[selectedIndex];
+        return elements.get(selectedIndex);
     }
 
     public List<E> sample(int n) {
