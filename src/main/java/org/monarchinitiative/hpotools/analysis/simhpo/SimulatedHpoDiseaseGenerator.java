@@ -41,6 +41,7 @@ public class SimulatedHpoDiseaseGenerator {
 
             for (var pf: disease.annotations()) {
                 System.out.printf("freqeuncy of the term %.2f", pf.frequency());
+                System.out.println(" ");
             }/*
                  * TODO ..
                  * 1. Extract OMIM:123456 from "diseases", throw error if not present
