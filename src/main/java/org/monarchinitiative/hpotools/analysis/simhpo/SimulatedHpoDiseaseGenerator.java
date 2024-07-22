@@ -38,9 +38,10 @@ public class SimulatedHpoDiseaseGenerator {
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
             System.out.println(disease);
-            Optional<TemporalInterval> optOnsetRange = disease.diseaseOnset();
-            int onset;
+
             // Add onset to the phenopacket if possible
+            Optional<TemporalInterval> optOnsetRange = disease.diseaseOnset();
+            Integer onset = null;
             if (optOnsetRange.isPresent()) {
                 TemporalInterval onsetRange = optOnsetRange.get();
                 System.out.println(onsetRange);
@@ -52,7 +53,14 @@ public class SimulatedHpoDiseaseGenerator {
             } else {
                 System.out.println("No onset information available");
             }
+
             // Add some age to the phenopacket by adding a few years to the onset
+            if (onset != null) {
+                int age = onset + random.nextInt(0, 10 * 365); // add up to 10 years
+                System.out.println("Randomly chosen age (days): " + age);
+            } else {
+                System.out.println("No onset information available");
+            }
             // Add random sex except for X-chromosomal recessive inheritance, in which case add male
 
             for (var pf: disease.annotations()) {
