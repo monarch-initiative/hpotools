@@ -109,13 +109,9 @@ public class SimulatedHpoDiseaseGenerator {
             List<HpoDiseaseAnnotation> allAnnotations = (List<HpoDiseaseAnnotation>) disease.annotations();
             ProportionalRandomSelection<HpoDiseaseAnnotation> prs = new ProportionalRandomSelection<>(allAnnotations, probabilities, random);
             annotations = prs.sample(n_terms);
-            System.out.println("Selected annotations: ");
-            for (HpoDiseaseAnnotation annotation : selectedAnnotations) {
-                System.out.println(annotation);
-            }
-
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
+            return Optional.empty();
         }
         long currentSeconds = System.currentTimeMillis() / 1000;
         Individual subject = Individual.newBuilder()
