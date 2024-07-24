@@ -123,21 +123,25 @@ public class SimulatedHpoDiseaseGenerator {
                         .setLabel("Homo Sapiens Sapiens")
                         .build())
                 .build();
-        // i didn't see Age was disconnected in the Phenopacket Schema, so here it is anyway
-//        double avgMonthLength = 365.0 / 12.0;
-//        int ageYears = age / 365;
-//        int ageMonths = (int) ((age % 365) / avgMonthLength);
-//        int ageDays = (int) ((age % 365) % avgMonthLength);
-//        System.out.println(ageYears + " " + ageMonths + " " + ageDays);
-//        Age ageBlock = Age.newBuilder()
-//                .setIso8601Duration("P" + ageYears + "Y" + ageMonths + "M" + ageDays + "D")
-//                .build();
-        Disease disease = Disease.newBuilder()
-                .setTerm(OntologyClass.newBuilder()
-                        .setId(omimId.getValue())
-                        .build())
-                .build();
-        System.out.println("Selected annotations: ");
+        Disease disease;
+        if (onset > 0) {
+            disease = Disease.newBuilder()
+                    .setTerm(OntologyClass.newBuilder()
+                            .setId(omimId.getValue())
+                            .build())
+                    .setOnset(TimeElement.newBuilder()
+                            .setTimestamp(Timestamp.newBuilder()
+                                    .setSeconds(age * 24 * 60 * 60)  // days to seconds
+                                    .build())
+                            .build())
+                    .build();
+        } else {
+            disease = Disease.newBuilder()
+                    .setTerm(OntologyClass.newBuilder()
+                            .setId(omimId.getValue())
+                            .build())
+                    .build();
+        }
         for (HpoDiseaseAnnotation annotation : annotations) {
             System.out.println(annotation);
         }
