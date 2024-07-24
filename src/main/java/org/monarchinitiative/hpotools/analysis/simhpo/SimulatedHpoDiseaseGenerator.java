@@ -61,29 +61,22 @@ public class SimulatedHpoDiseaseGenerator {
         List<HpoDiseaseAnnotation> annotations = new ArrayList<>();
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
-            System.out.println(disease);
 
             // Add onset to the phenopacket if possible
             Optional<TemporalInterval> optOnsetRange = disease.diseaseOnset();
-            Integer onset = null;
             if (optOnsetRange.isPresent()) {
                 TemporalInterval onsetRange = optOnsetRange.get();
-                System.out.println(onsetRange);
                 // choose a random onset from the range
                 int start = onsetRange.start().days();
                 int end = onsetRange.end().days();
                 onset = random.nextInt(start, end + 1);
-                System.out.println("Randomly chosen onset (days): " + onset);
             } else {
-                System.out.println("No onset information available");
+                LOGGER.debug("No onset information available for disease {}", omimId.getValue());
             }
 
             // Add some age to the phenopacket by adding a few years to the onset
-            if (onset != null) {
+            if (onset != 0) {
                 age = onset + random.nextInt(0, 10 * 365); // add up to 10 years
-                System.out.println("Randomly chosen age (days): " + age);
-            } else {
-                System.out.println("No onset information available");
             }
 
             // Add random sex except for X-chromosomal recessive inheritance, in which case add male
@@ -91,20 +84,16 @@ public class SimulatedHpoDiseaseGenerator {
             String xChromosomalRecessiveHPO = "HP:0001419";
             int male = 2;
             if (modeOfInheritance.contains(TermId.of(xChromosomalRecessiveHPO))) {
-                System.out.println("X-chromosomal recessive inheritance");
                 sex = male;
             } else {
                 sex = random.nextInt(1, 3);
             }
-            System.out.println("Randomly chosen sex: " + sex);
 
             double sum = disease.annotations().stream().mapToDouble(HpoDiseaseAnnotation::frequency).sum();
 
             double[] probabilities = disease.annotations().stream()
                     .mapToDouble(pf -> pf.frequency() / sum)
                     .toArray();
-
-            System.out.println("Probabilities: " + Arrays.toString(probabilities));
 
             // Add annotations to the phenopacket
             List<HpoDiseaseAnnotation> allAnnotations = (List<HpoDiseaseAnnotation>) disease.annotations();
