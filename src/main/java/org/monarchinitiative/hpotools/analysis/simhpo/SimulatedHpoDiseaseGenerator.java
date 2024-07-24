@@ -37,7 +37,21 @@ public class SimulatedHpoDiseaseGenerator {
         return generateSimulatedPhenopacket(omimId, DEFAULT_NUMBER_OF_TERMS);
     }
 
-    public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms) {
+    /**
+     * Generates a simulated Phenopacket based on the specified OMIM ID and number of HPO terms.
+     *
+     * This method performs the following steps:
+     * 1. Extracts the OMIM ID (e.g., OMIM:123456) from the provided "diseases" list. If the OMIM ID is not present,
+     *      an error is thrown.
+     * 2. Selects a specified number of HPO terms at random from the annotations of the disease.
+     * 3. Chooses the annotations according to their frequencies by creating a normalized probability table.
+     * 4. Uses PhenopacketTools Builder classes to construct the Phenopacket. For an example, see the phenopacket2prompt.
+     *
+     * @param omimId The OMIM ID representing the disease.
+     * @param n_terms The number of HPO terms to select randomly from the disease annotations.
+     * @return An Optional containing the generated Phenopacket if successful, otherwise an empty Optional.
+     */
+    public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms, String identifier) {
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
             System.out.println(disease);
