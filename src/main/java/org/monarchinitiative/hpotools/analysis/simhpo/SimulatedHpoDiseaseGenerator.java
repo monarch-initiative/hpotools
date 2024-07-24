@@ -129,6 +129,15 @@ public class SimulatedHpoDiseaseGenerator {
                         .setLabel("Homo Sapiens Sapiens")
                         .build())
                 .build();
+        // i didn't see Age was disconnected in the Phenopacket Schema, so here it is anyway
+//        double avgMonthLength = 365.0 / 12.0;
+//        int ageYears = age / 365;
+//        int ageMonths = (int) ((age % 365) / avgMonthLength);
+//        int ageDays = (int) ((age % 365) % avgMonthLength);
+//        System.out.println(ageYears + " " + ageMonths + " " + ageDays);
+//        Age ageBlock = Age.newBuilder()
+//                .setIso8601Duration("P" + ageYears + "Y" + ageMonths + "M" + ageDays + "D")
+//                .build();
         Disease disease = Disease.newBuilder()
                 .setTerm(OntologyClass.newBuilder()
                         .setId(omimId.getValue())
