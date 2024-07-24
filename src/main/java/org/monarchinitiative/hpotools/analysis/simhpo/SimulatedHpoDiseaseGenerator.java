@@ -57,6 +57,7 @@ public class SimulatedHpoDiseaseGenerator {
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms, String identifier) {
         int age = 0;
         int sex = 0;
+        List<HpoDiseaseAnnotation> annotations = new ArrayList<>();
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
             System.out.println(disease);
@@ -105,9 +106,9 @@ public class SimulatedHpoDiseaseGenerator {
             System.out.println("Probabilities: " + Arrays.toString(probabilities));
 
             // Add annotations to the phenopacket
-            List<HpoDiseaseAnnotation> annotations = (List<HpoDiseaseAnnotation>) disease.annotations();
-            ProportionalRandomSelection<HpoDiseaseAnnotation> prs = new ProportionalRandomSelection<>(annotations, probabilities, random);
-            List<HpoDiseaseAnnotation> selectedAnnotations = prs.sample(n_terms);
+            List<HpoDiseaseAnnotation> allAnnotations = (List<HpoDiseaseAnnotation>) disease.annotations();
+            ProportionalRandomSelection<HpoDiseaseAnnotation> prs = new ProportionalRandomSelection<>(allAnnotations, probabilities, random);
+            annotations = prs.sample(n_terms);
             System.out.println("Selected annotations: ");
             for (HpoDiseaseAnnotation annotation : selectedAnnotations) {
                 System.out.println(annotation);
@@ -140,6 +141,10 @@ public class SimulatedHpoDiseaseGenerator {
                         .setId(omimId.getValue())
                         .build())
                 .build();
+        System.out.println("Selected annotations: ");
+        for (HpoDiseaseAnnotation annotation : annotations) {
+            System.out.println(annotation);
+        }
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
                 .individual(subject) // TODO: @pnrobinson for all other fields it's add... for individual it isn't?
                 .addDisease(disease);
