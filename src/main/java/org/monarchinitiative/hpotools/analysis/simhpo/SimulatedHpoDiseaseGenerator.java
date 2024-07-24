@@ -121,7 +121,7 @@ public class SimulatedHpoDiseaseGenerator {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
         }
         long currentSeconds = System.currentTimeMillis() / 1000;
-        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds));
+        Individual subject = Individual.newBuilder()
         Individual individual = Individual.newBuilder()
                 .setId(identifier)
                 .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - age / 24 / 60 / 60))
