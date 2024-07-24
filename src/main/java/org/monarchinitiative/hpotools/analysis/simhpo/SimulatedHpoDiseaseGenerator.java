@@ -138,7 +138,8 @@ public class SimulatedHpoDiseaseGenerator {
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
                 .individual(subject) // TODO: @pnrobinson for all other fields it's add... for individual it isn't?
                 .addDisease(disease);
-        return Optional.empty(); // return the phenopacket unless there is an error
+        Phenopacket phenopacket = builder.build();
+        return Optional.of(phenopacket); // return the phenopacket unless there is an error
     }
 
     private MetaData buildMetaData(long currentSeconds) {
