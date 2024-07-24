@@ -122,7 +122,6 @@ public class SimulatedHpoDiseaseGenerator {
         }
         long currentSeconds = System.currentTimeMillis() / 1000;
         Individual subject = Individual.newBuilder()
-        Individual individual = Individual.newBuilder()
                 .setId(identifier)
                 .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - age / 24 / 60 / 60))
                 .setSex(Sex.forNumber(sex))
@@ -137,6 +136,9 @@ public class SimulatedHpoDiseaseGenerator {
                         .setLabel(omimId.getValue())
                         .build())
                 .build();
+        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
+                .individual(subject) // TODO: @pnrobinson for all other fields it's add... for individual it isn't?
+                .addDisease(disease);
         return Optional.empty(); // return the phenopacket unless there is an error
     }
 
