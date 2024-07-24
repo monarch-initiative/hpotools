@@ -122,6 +122,8 @@ public class SimulatedHpoDiseaseGenerator {
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
         }
+        MetaData metaData = MetaData.newBuilder()
+        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, metaData);
         return Optional.empty(); // return the phenopacket unless there is an error
     }
 
