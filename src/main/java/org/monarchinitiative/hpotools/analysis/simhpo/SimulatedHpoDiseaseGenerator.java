@@ -122,11 +122,27 @@ public class SimulatedHpoDiseaseGenerator {
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
         }
-        MetaData metaData = MetaData.newBuilder()
+        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData());
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, metaData);
         return Optional.empty(); // return the phenopacket unless there is an error
     }
 
-
+    private MetaData buildMetaData() {
+        long currentSeconds = System.currentTimeMillis() / 1000;
+        return MetaData.newBuilder()
+                .setCreated(Timestamp
+                        .newBuilder()
+                        .setSeconds(currentSeconds))
+                .setCreatedBy("SimulatedHpoDiseaseGenerator")
+                .setPhenopacketSchemaVersion("2.0")
+                .setResources(0, Resource.newBuilder()
+                        .setId("hp")
+                        .setName("Human Phenotype Ontology")
+                        .setNamespacePrefix("HP")
+                        .setUrl("http://www.human-phenotype-ontology.org")
+                        .setIriPrefix("http://purl.obolibrary.org/obo/HP_")
+                        .build())
+                .build();
+    }
 
 }
