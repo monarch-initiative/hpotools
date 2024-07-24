@@ -58,7 +58,7 @@ public class SimulatedHpoDiseaseGenerator {
      * @return An Optional containing the generated Phenopacket if successful, otherwise an empty Optional.
      */
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms, String identifier) {
-        int age;
+        int age = 0;
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
             System.out.println(disease);
@@ -123,6 +123,9 @@ public class SimulatedHpoDiseaseGenerator {
         long currentSeconds = System.currentTimeMillis() / 1000;
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds));
         Individual individual = Individual.newBuilder()
+                .setId(identifier)
+                .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - age / 24 / 60 / 60))
+                .build();
         return Optional.empty(); // return the phenopacket unless there is an error
     }
 
