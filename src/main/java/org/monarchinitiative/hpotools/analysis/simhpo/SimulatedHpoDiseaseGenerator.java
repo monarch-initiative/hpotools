@@ -73,7 +73,7 @@ public class SimulatedHpoDiseaseGenerator {
                 // choose a random onset from the range
                 int start = onsetRange.start().days();
                 int end = onsetRange.end().days();
-                onset = random.nextInt(start, end + 1); // TODO @pnrobinson: is end inclusive or exclusive?
+                onset = random.nextInt(start, end + 1);
                 System.out.println("Randomly chosen onset (days): " + onset);
             } else {
                 System.out.println("No onset information available");
@@ -89,7 +89,6 @@ public class SimulatedHpoDiseaseGenerator {
 
             // Add random sex except for X-chromosomal recessive inheritance, in which case add male
             List<TermId> modeOfInheritance = disease.modesOfInheritance();
-            // TODO @pnrobinson: is this the correct HPO term? Should it only be male if it is the only mode of inheritance, or also if there are other modes of inheritance?
             String xChromosomalRecessiveHPO = "HP:0001419";
             int male = 2;
             if (modeOfInheritance.contains(TermId.of(xChromosomalRecessiveHPO))) {
