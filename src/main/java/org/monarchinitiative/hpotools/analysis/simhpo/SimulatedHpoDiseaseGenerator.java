@@ -1,13 +1,19 @@
 package org.monarchinitiative.hpotools.analysis.simhpo;
 
+import com.google.protobuf.Timestamp;
 import org.monarchinitiative.phenol.annotations.base.temporal.TemporalInterval;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDisease;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseaseAnnotation;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.TermId;
+import org.phenopackets.phenopackettools.builder.PhenopacketBuilder;
 import org.phenopackets.phenopackettools.builder.constants.Onset;
 import org.phenopackets.schema.v2.Phenopacket;
+
+import org.phenopackets.schema.v2.core.Individual;
+import org.phenopackets.schema.v2.core.MetaData;
+import org.phenopackets.schema.v2.core.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,21 +115,13 @@ public class SimulatedHpoDiseaseGenerator {
             for (HpoDiseaseAnnotation annotation : selectedAnnotations) {
                 System.out.println(annotation);
             }
-            /*
-             * TODO ..
-             * 1. Extract OMIM:123456 from "diseases", throw error if not present
-             * 2. choose nterms HPO terms at random from the annotations of the disease
-             * 3. choose the annotations according to the frequencies -- for instance, create a normalized probability table
-             * Something like this: https://stackoverflow.com/questions/43530244/how-to-choose-an-item-in-a-list-according-to-a-specific-probability
-             * 4. Use PhenopacketTools Builder classes to build phenopacket (See phenopacket2prompt for example)
-             * Just simulate HPO terms, do not simulate age and sex for now, but we could do htis in phenopacket2prompt
-             */
 
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
         }
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData());
-        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, metaData);
+        Individual individual = Individual.newBuilder().build();
+//        builder.individual();
         return Optional.empty(); // return the phenopacket unless there is an error
     }
 
