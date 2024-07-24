@@ -150,6 +150,13 @@ public class SimulatedHpoDiseaseGenerator {
                         .setUrl("https://omim.org/")
                         .setIriPrefix("https://omim.org/entry/") // TODO @pnrobinson: is this the correct IRI prefix?
                         .build())
+                .setResources(2, Resource.newBuilder()
+                        .setId("ncbitaxon")
+                        .setName("NCBI Taxonomy")
+                        .setNamespacePrefix("NCBITaxon")
+                        .setUrl("https://www.ncbi.nlm.nih.gov/taxonomy")
+                        .setIriPrefix("https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=")
+                        .build())
                 .build();
     }
 
