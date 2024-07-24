@@ -142,6 +142,13 @@ public class SimulatedHpoDiseaseGenerator {
                         .setUrl("http://www.human-phenotype-ontology.org")
                         .setIriPrefix("http://purl.obolibrary.org/obo/HP_")
                         .build())
+                .setResources(1, Resource.newBuilder()
+                        .setId("omim")
+                        .setName("Online Mendeian Inheritance in Man")
+                        .setNamespacePrefix("OMIM")
+                        .setUrl("https://omim.org/")
+                        .setIriPrefix("https://omim.org/entry/") // TODO @pnrobinson: is this the correct IRI prefix?
+                        .build())
                 .build();
     }
 
