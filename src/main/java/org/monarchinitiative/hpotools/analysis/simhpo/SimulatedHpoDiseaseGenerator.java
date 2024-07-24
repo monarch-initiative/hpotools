@@ -11,10 +11,7 @@ import org.phenopackets.phenopackettools.builder.PhenopacketBuilder;
 import org.phenopackets.phenopackettools.builder.constants.Onset;
 import org.phenopackets.schema.v2.Phenopacket;
 
-import org.phenopackets.schema.v2.core.Individual;
-import org.phenopackets.schema.v2.core.MetaData;
-import org.phenopackets.schema.v2.core.Resource;
-import org.phenopackets.schema.v2.core.Sex;
+import org.phenopackets.schema.v2.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +124,7 @@ public class SimulatedHpoDiseaseGenerator {
                 .setId(identifier)
                 .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - age / 24 / 60 / 60))
                 .setSex(Sex.forNumber(sex))
+                .setTaxonomy(OntologyClass.newBuilder().setId("NCBITaxon:9606").setLabel("Homo Sapiens Sapiens").build())
                 .build();
         return Optional.empty(); // return the phenopacket unless there is an error
     }
