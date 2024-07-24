@@ -126,7 +126,11 @@ public class SimulatedHpoDiseaseGenerator {
                 .setId(identifier)
                 .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - age / 24 / 60 / 60))
                 .setSex(Sex.forNumber(sex))
-                .setTaxonomy(OntologyClass.newBuilder().setId("NCBITaxon:9606").setLabel("Homo Sapiens Sapiens").build())
+                .setTaxonomy(OntologyClass.newBuilder()
+                        .setId("NCBITaxon:9606")
+                        .setLabel("Homo Sapiens Sapiens")
+                        .build())
+                .build();
                 .build();
         return Optional.empty(); // return the phenopacket unless there is an error
     }
