@@ -58,6 +58,7 @@ public class SimulatedHpoDiseaseGenerator {
      * @return An Optional containing the generated Phenopacket if successful, otherwise an empty Optional.
      */
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms, String identifier) {
+        int age;
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
             System.out.println(disease);
@@ -79,14 +80,14 @@ public class SimulatedHpoDiseaseGenerator {
 
             // Add some age to the phenopacket by adding a few years to the onset
             if (onset != null) {
-                int age = onset + random.nextInt(0, 10 * 365); // add up to 10 years
+                age = onset + random.nextInt(0, 10 * 365); // add up to 10 years
                 System.out.println("Randomly chosen age (days): " + age);
             } else {
                 System.out.println("No onset information available");
             }
 
             // Add random sex except for X-chromosomal recessive inheritance, in which case add male
-           List<TermId> modeOfInheritance = disease.modesOfInheritance();
+            List<TermId> modeOfInheritance = disease.modesOfInheritance();
             // TODO @pnrobinson: is this the correct HPO term? Should it only be male if it is the only mode of inheritance, or also if there are other modes of inheritance?
             String xChromosomalRecessiveHPO = "HP:0001419";
             int male = 2;
