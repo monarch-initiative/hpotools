@@ -132,8 +132,18 @@ public class SimulatedHpoDiseaseGenerator {
                             .build())
                     .build();
         }
+        List<PhenotypicFeature> phenotypicFeatures = new ArrayList<>();
+        for (HpoDiseaseAnnotation annotation : annotations) {
+            TermId hpoTerm = annotation.id();
+            OntologyClass type = OntologyClass.newBuilder()
+                    .setId(hpoTerm.getValue())
+                    .setLabel(hpoOntology.getTermLabel(hpoTerm).orElse(""))
+                    .build();
         for (HpoDiseaseAnnotation annotation : annotations) {
             System.out.println(annotation);
+            phenotypicFeatures.add(PhenotypicFeature.newBuilder()
+                    .setType(type)
+                    .build());
         }
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
                 .individual(subject) // TODO: @pnrobinson for all other fields it's add... for individual it isn't?
