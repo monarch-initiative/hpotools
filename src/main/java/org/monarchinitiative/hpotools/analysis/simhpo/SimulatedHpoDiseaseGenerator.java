@@ -131,8 +131,7 @@ public class SimulatedHpoDiseaseGenerator {
                 .build();
         Disease disease = Disease.newBuilder()
                 .setTerm(OntologyClass.newBuilder()
-                        .setId(omimId.getId())
-                        .setLabel(omimId.getValue())
+                        .setId(omimId.getValue())
                         .build())
                 .build();
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
