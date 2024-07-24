@@ -119,14 +119,13 @@ public class SimulatedHpoDiseaseGenerator {
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
         }
-        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData());
-        Individual individual = Individual.newBuilder().build();
-//        builder.individual();
+        long currentSeconds = System.currentTimeMillis() / 1000;
+        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds));
+        Individual individual = Individual.newBuilder()
         return Optional.empty(); // return the phenopacket unless there is an error
     }
 
-    private MetaData buildMetaData() {
-        long currentSeconds = System.currentTimeMillis() / 1000;
+    private MetaData buildMetaData(long currentSeconds) {
         return MetaData.newBuilder()
                 .setCreated(Timestamp
                         .newBuilder()
