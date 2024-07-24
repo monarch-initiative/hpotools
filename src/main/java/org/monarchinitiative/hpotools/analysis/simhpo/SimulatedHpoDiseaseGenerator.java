@@ -14,6 +14,7 @@ import org.phenopackets.schema.v2.Phenopacket;
 import org.phenopackets.schema.v2.core.Individual;
 import org.phenopackets.schema.v2.core.MetaData;
 import org.phenopackets.schema.v2.core.Resource;
+import org.phenopackets.schema.v2.core.Sex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,7 @@ public class SimulatedHpoDiseaseGenerator {
      */
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms, String identifier) {
         int age = 0;
+        int sex = 0;
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
             System.out.println(disease);
@@ -91,7 +93,6 @@ public class SimulatedHpoDiseaseGenerator {
             // TODO @pnrobinson: is this the correct HPO term? Should it only be male if it is the only mode of inheritance, or also if there are other modes of inheritance?
             String xChromosomalRecessiveHPO = "HP:0001419";
             int male = 2;
-            int sex;
             if (modeOfInheritance.contains(TermId.of(xChromosomalRecessiveHPO))) {
                 System.out.println("X-chromosomal recessive inheritance");
                 sex = male;
@@ -125,6 +126,7 @@ public class SimulatedHpoDiseaseGenerator {
         Individual individual = Individual.newBuilder()
                 .setId(identifier)
                 .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - age / 24 / 60 / 60))
+                .setSex(Sex.forNumber(sex))
                 .build();
         return Optional.empty(); // return the phenopacket unless there is an error
     }
