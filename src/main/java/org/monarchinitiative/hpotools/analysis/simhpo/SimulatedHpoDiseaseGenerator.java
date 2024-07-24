@@ -139,10 +139,18 @@ public class SimulatedHpoDiseaseGenerator {
                     .setId(hpoTerm.getValue())
                     .setLabel(hpoOntology.getTermLabel(hpoTerm).orElse(""))
                     .build();
-        for (HpoDiseaseAnnotation annotation : annotations) {
-            System.out.println(annotation);
+
+            List<OntologyClass> modifiers = annotation.modifiers()
+                    .stream()
+                    .map(modifier -> OntologyClass.newBuilder()
+                        .setId(modifier.getValue())
+                        .setLabel(hpoOntology.getTermLabel(modifier).orElse(""))
+                        .build()
+                    ).toList();
+            // TODO: could still add simulated onset and resolution in the future, is present in HpoDiseaseAnnotation
             phenotypicFeatures.add(PhenotypicFeature.newBuilder()
                     .setType(type)
+                    .addAllModifiers(modifiers)
                     .build());
         }
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
