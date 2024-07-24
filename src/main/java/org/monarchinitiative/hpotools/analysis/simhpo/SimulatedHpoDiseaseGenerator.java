@@ -55,8 +55,9 @@ public class SimulatedHpoDiseaseGenerator {
      * @return An Optional containing the generated Phenopacket if successful, otherwise an empty Optional.
      */
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms, String identifier) {
-        int age = 0;
+        long age = 0;
         int sex = 0;
+        long onset = 0;
         List<HpoDiseaseAnnotation> annotations = new ArrayList<>();
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
