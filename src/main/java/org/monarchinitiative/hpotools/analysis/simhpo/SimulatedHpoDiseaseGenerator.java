@@ -131,6 +131,11 @@ public class SimulatedHpoDiseaseGenerator {
                         .setLabel("Homo Sapiens Sapiens")
                         .build())
                 .build();
+        Disease disease = Disease.newBuilder()
+                .setTerm(OntologyClass.newBuilder()
+                        .setId(omimId.getId())
+                        .setLabel(omimId.getValue())
+                        .build())
                 .build();
         return Optional.empty(); // return the phenopacket unless there is an error
     }
