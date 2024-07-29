@@ -9,6 +9,11 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
     }
 
     public E sample() {
+        if (elements.isEmpty()) {
+            throw new IllegalStateException("The list of elements is empty.");
+        } else if (elements.size() == 1) {
+            return elements.get(0);
+        }
         E sampled = super.sample();
 
         int selectedIndex = elements.indexOf(sampled);
@@ -30,6 +35,15 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
         cumulativeProbabilities = cumulativeProbabilities();
 
         return sampled;
+    }
+
+    public List<E> sample(int n) {
+        if (n < 0) {
+            throw new IllegalArgumentException("The number of samples must be non-negative.");
+        } else if (n >= elements.size()) {
+            throw new IllegalArgumentException("The number of samples must be less than the number of elements.");
+        }
+        return super.sample(n);
     }
 
 }
