@@ -17,7 +17,7 @@ public abstract class AbstractProportionalSampler<E>{
         this.cumulativeProbabilities = cumulativeProbabilities();
     }
 
-    private double[] cumulativeProbabilities() {
+    protected double[] cumulativeProbabilities() {
         double[] normalized = normalize(probabilities);
         double[] cumulativeProbabilities = new double[normalized.length];
         cumulativeProbabilities[0] = normalized[0];
