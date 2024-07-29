@@ -8,7 +8,6 @@ import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.phenopackets.phenopackettools.builder.PhenopacketBuilder;
-import org.phenopackets.phenopackettools.builder.constants.Onset;
 import org.phenopackets.schema.v2.Phenopacket;
 
 import org.phenopackets.schema.v2.core.*;
@@ -97,7 +96,7 @@ public class SimulatedHpoDiseaseGenerator {
 
             // Add annotations to the phenopacket
             List<HpoDiseaseAnnotation> allAnnotations = (List<HpoDiseaseAnnotation>) disease.annotations();
-            ProportionalRandomSelection<HpoDiseaseAnnotation> prs = new ProportionalRandomSelection<>(allAnnotations, probabilities, random);
+            ProportionalSamplerWithoutReplacement<HpoDiseaseAnnotation> prs = new ProportionalSamplerWithoutReplacement<>(allAnnotations, probabilities, random);
             annotations = prs.sample(n_terms);
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
@@ -106,7 +105,7 @@ public class SimulatedHpoDiseaseGenerator {
         long currentSeconds = System.currentTimeMillis() / 1000;
         Individual subject = Individual.newBuilder()
                 .setId(identifier)
-                .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - age / 24 / 60 / 60))
+                .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - (age / 24 / 60 / 60)))
                 .setSex(Sex.forNumber(sex))
                 .setTaxonomy(OntologyClass.newBuilder()
                         .setId("NCBITaxon:9606")
@@ -121,7 +120,7 @@ public class SimulatedHpoDiseaseGenerator {
                             .build())
                     .setOnset(TimeElement.newBuilder()
                             .setTimestamp(Timestamp.newBuilder()
-                                    .setSeconds(age * 24 * 60 * 60)  // days to seconds
+                                    .setSeconds(currentSeconds - onset / 24 / 60 / 60)  // days to seconds
                                     .build())
                             .build())
                     .build();
