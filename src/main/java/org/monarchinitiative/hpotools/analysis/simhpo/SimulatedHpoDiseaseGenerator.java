@@ -50,10 +50,10 @@ public class SimulatedHpoDiseaseGenerator {
      * 4. Uses PhenopacketTools Builder classes to construct the Phenopacket. For an example, see the phenopacket2prompt.
      *
      * @param omimId The OMIM ID representing the disease.
-     * @param n_terms The number of HPO terms to select randomly from the disease annotations.
+     * @param nTerms The number of HPO terms to select randomly from the disease annotations.
      * @return An Optional containing the generated Phenopacket if successful, otherwise an empty Optional.
      */
-    public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int n_terms, String identifier) {
+    public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int nTerms, String identifier) {
         long age = 0;
         int sex = 0;
         long onset = 0;
@@ -98,6 +98,7 @@ public class SimulatedHpoDiseaseGenerator {
             List<HpoDiseaseAnnotation> allAnnotations = (List<HpoDiseaseAnnotation>) disease.annotations();
             ProportionalSamplerWithoutReplacement<HpoDiseaseAnnotation> prs = new ProportionalSamplerWithoutReplacement<>(allAnnotations, probabilities, random);
             annotations = prs.sample(n_terms);
+            annotations = prs.sample(nTerms);
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
             return Optional.empty();
