@@ -8,6 +8,7 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
         super(elements, probabilities, random);
     }
 
+    @Override
     public E sample() {
         if (elements.isEmpty()) {
             throw new IllegalStateException("The list of elements is empty.");
@@ -37,6 +38,7 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
         return sampled;
     }
 
+    @Override
     public List<E> sample(int n) {
         if (n < 0) {
             throw new IllegalArgumentException("The number of samples must be non-negative.");
