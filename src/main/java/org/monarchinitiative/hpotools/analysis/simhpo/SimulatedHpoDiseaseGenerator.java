@@ -97,7 +97,13 @@ public class SimulatedHpoDiseaseGenerator {
             // Add annotations to the phenopacket
             List<HpoDiseaseAnnotation> allAnnotations = (List<HpoDiseaseAnnotation>) disease.annotations();
             ProportionalSamplerWithoutReplacement<HpoDiseaseAnnotation> prs = new ProportionalSamplerWithoutReplacement<>(allAnnotations, probabilities, random);
-            annotations = prs.sample(n_terms);
+
+            if (nTerms > allAnnotations.size()) {
+                LOGGER.warn("Requested number of terms ({}) is greater than the number of annotations ({}) for disease {}",
+                        nTerms, allAnnotations.size(), omimId.getValue());
+                nTerms = allAnnotations.size();
+            }
+
             annotations = prs.sample(nTerms);
         } else {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
