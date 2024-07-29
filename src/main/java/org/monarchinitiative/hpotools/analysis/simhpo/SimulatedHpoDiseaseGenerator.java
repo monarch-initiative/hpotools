@@ -26,7 +26,7 @@ public class SimulatedHpoDiseaseGenerator {
     private final Ontology hpoOntology;
     private final Random random;
 
-    private int idCounter = 0;
+    private static int idCounter = 0;
 
     public SimulatedHpoDiseaseGenerator(HpoDiseases hpoDiseases, Ontology hpoOntology) {
         this.hpoDiseases = hpoDiseases;
@@ -36,7 +36,7 @@ public class SimulatedHpoDiseaseGenerator {
 
 
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId) {
-        return generateSimulatedPhenopacket(omimId, DEFAULT_NUMBER_OF_TERMS, "SIM-" + idCounter++);
+        return generateSimulatedPhenopacket(omimId, DEFAULT_NUMBER_OF_TERMS, "SIM-" + SimulatedHpoDiseaseGenerator.idCounter++);
     }
 
     /**
