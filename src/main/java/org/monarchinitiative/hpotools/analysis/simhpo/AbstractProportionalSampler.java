@@ -15,7 +15,6 @@ public abstract class AbstractProportionalSampler<E>{
         this.probabilities = probabilities;
         this.random = random;
         this.cumulativeProbabilities = cumulativeProbabilities();
-        System.out.println("cumulativeProbabilities = " + Arrays.toString(cumulativeProbabilities));
     }
 
     private double[] cumulativeProbabilities() {
@@ -35,7 +34,7 @@ public abstract class AbstractProportionalSampler<E>{
             sum += probability;
         }
         for (int i = 0; i < normalized.length; i++) {
-            normalized[i] /= sum;
+            normalized[i] = probabilities[i] / sum;
         }
         return normalized;
     }
