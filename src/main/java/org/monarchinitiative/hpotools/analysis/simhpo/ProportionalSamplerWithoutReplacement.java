@@ -44,7 +44,7 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
     public List<E> sample(int n) {
         if (n < 0) {
             throw new IllegalArgumentException("The number of samples must be non-negative.");
-        } else if (n >= elements.size()) {
+        } else if (n > elements.size()) {
             throw new IllegalArgumentException("The number of samples must be less than the number of elements.");
         }
         List<E> selectedElements = new ArrayList<E>();
