@@ -13,7 +13,9 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
         if (elements.isEmpty()) {
             throw new IllegalStateException("The list of elements is empty.");
         } else if (elements.size() == 1) {
-            return elements.get(0);
+            E element = elements.get(0);
+            elements = new ArrayList<E>();
+            return element;
         }
         E sampled = super.sample();
 
