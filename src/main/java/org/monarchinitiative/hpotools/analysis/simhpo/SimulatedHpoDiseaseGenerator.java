@@ -57,7 +57,7 @@ public class SimulatedHpoDiseaseGenerator {
         long age = 0;
         int sex = 0;
         long onset = 0;
-        List<HpoDiseaseAnnotation> annotations = new ArrayList<>();
+        List<HpoDiseaseAnnotation> annotations;
         if (hpoDiseases.diseaseById().containsKey(omimId)) {
             HpoDisease disease = hpoDiseases.diseaseById().get(omimId);
 
