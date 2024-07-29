@@ -19,13 +19,24 @@ public abstract class AbstractProportionalSampler<E>{
     }
 
     private double[] cumulativeProbabilities() {
-        // TODO: normalize probabilities
-        return;
-//        double[] cumulativeProbabilities = new double[probabilities.length];
-//        cumulativeProbabilities[0] = probabilities[0];
-//        for (int i = 1; i < probabilities.length; i++) {
-//            cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + probabilities[i];
-//        }
-//        return cumulativeProbabilities;
+        double[] normalized = normalize(probabilities);
+        double[] cumulativeProbabilities = new double[normalized.length];
+        cumulativeProbabilities[0] = normalized[0];
+        for (int i = 1; i < normalized.length; i++) {
+            cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + normalized[i];
+        }
+        return cumulativeProbabilities;
+    }
+
+    public static double[] normalize(double[] probabilities) {
+        double sum = 0;
+        double[] normalized = new double[probabilities.length];
+        for (double probability : probabilities) {
+            sum += probability;
+        }
+        for (int i = 0; i < normalized.length; i++) {
+            normalized[i] /= sum;
+        }
+        return normalized;
     }
 }
