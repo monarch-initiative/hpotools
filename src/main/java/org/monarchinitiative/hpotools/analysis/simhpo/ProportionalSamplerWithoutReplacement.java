@@ -47,7 +47,11 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
         } else if (n >= elements.size()) {
             throw new IllegalArgumentException("The number of samples must be less than the number of elements.");
         }
-        return super.sample(n);
+        List<E> selectedElements = new ArrayList<E>();
+        for (int i = 0; i < n; i++) {
+            selectedElements.add(sample());
+        }
+        return selectedElements;
     }
 
 }
