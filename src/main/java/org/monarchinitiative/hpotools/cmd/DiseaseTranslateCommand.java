@@ -19,10 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +65,12 @@ public class DiseaseTranslateCommand extends HPOCommand implements Callable<Inte
         }
         for (String line : rowList) {
             System.out.println(line);
+        }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(outfilePath))) {
+            for (String line : rowList) {
+                bw.write(line + "\n");
+            }
         }
         return 0;
     }
