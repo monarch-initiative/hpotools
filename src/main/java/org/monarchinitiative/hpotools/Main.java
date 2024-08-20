@@ -23,6 +23,7 @@ public class Main implements Callable<Integer> {
                     .addSubcommand("mondo", new MondoCommand())
                     .addSubcommand("onset", new OnsetCommand())
                     .addSubcommand("simhpo", new SimHpoCommand())
+                    .addSubcommand("translate", new DiseaseTranslateCommand())
                     .addSubcommand("word", new WordCommand())
                    ;
             cline.setToggleBooleanFlags(false);
