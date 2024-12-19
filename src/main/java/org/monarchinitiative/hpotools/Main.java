@@ -24,6 +24,7 @@ public class Main implements Callable<Integer> {
                     .addSubcommand("onset", new OnsetCommand())
                     .addSubcommand("simhpo", new SimHpoCommand())
                     .addSubcommand("translate", new DiseaseTranslateCommand())
+                    .addSubcommand("tsv", new Hpo2TsvCommand())
                     .addSubcommand("word", new WordCommand())
                    ;
             cline.setToggleBooleanFlags(false);

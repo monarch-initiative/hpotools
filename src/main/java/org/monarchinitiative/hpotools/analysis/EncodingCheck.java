@@ -17,6 +17,9 @@ public class EncodingCheck {
     private final Pattern HPO_TERM_PATTERN = Pattern.compile(pattern);
     private final File hpoOwlFile;
 
+    private final static  Set<Character> ACCETABLE_CHARS = Set.of('ö','ü', 'ï', 'à', 'é');
+
+    private int badChars = 0;
 
     /**
      * @param hpoOwlFile file for hp-edit.owl. Presumed checked by client code
@@ -43,36 +46,32 @@ public class EncodingCheck {
         } catch (IOException e) {
             LOGGER.error("Could not read hpo owl file", e);
         }
-        if (encodingErrors == 0) {
-            LOGGER.info("[INFO] No encoding errors detected");
-            System.out.println("No encoding errors detected");
-        }  else {
-            LOGGER.error("Encoding errors detected: " + encodingErrors);
+        if (badChars > 0) {
+            System.out.printf("Bad characters in HPO owl file: %d%n", badChars);
+        } else {
+            System.out.println("No bad encodings found in HPO owl file");
         }
     }
 
-
-    /** The following are flagged as potential errors by the checkLine function,
-     * but do not actually cause an error in our pipeline and this can be skipped.
-     */
-    private static Set<Character> acceptableChars = Set.of('ö', 'ü', 'à', 'é', 'ï');
-
-    public static int checkLine(String line, int lineno, String previous) {
+    public void checkLine(String line, int lineno, String previous) {
         byte[] bytes = line.getBytes(StandardCharsets.ISO_8859_1);
         String decodedLine = new String(bytes);
         if (! line.equals(decodedLine)) {
             for (int i=0; i< line.length();i++) {
-                char offendingChar = line.charAt(i);
-                if (acceptableChars.contains(offendingChar)) {
-                    continue;
-                }
-                if (offendingChar != decodedLine.charAt(i)) {
+                if (line.charAt(i) != decodedLine.charAt(i)) {
+                    Character unequalChar = line.charAt(i);
+                    if (ACCETABLE_CHARS.contains(unequalChar)) {
+                        continue;
+                    } else {
+                        badChars++;
+                    }
                     System.out.println(previous);
                     System.out.printf("L.%d:Pos:%d: ", lineno, i);
                     int b = Math.max(0, i-20);
                     int e = Math.min(line.length(), i+20);
                     String ss1 = line.substring(b, i);
                     String ss2 = line.substring(i+1, e);
+                    System.out.printf("%s{%c}%sc\n\n", ss1, unequalChar, ss2);
                     System.out.printf("%s{%c}%sc\n\n", ss1, offendingChar, ss2);
                     return 1;
                 }
