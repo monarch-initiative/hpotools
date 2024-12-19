@@ -41,7 +41,7 @@ public class EncodingCheck {
                 if (m.find()) {
                     hp_term = m.group();
                 }
-                encodingErrors += checkLine(line, ++i, hp_term);
+                checkLine(line, ++i, hp_term);
             }
         } catch (IOException e) {
             LOGGER.error("Could not read hpo owl file", e);
@@ -72,12 +72,10 @@ public class EncodingCheck {
                     String ss1 = line.substring(b, i);
                     String ss2 = line.substring(i+1, e);
                     System.out.printf("%s{%c}%sc\n\n", ss1, unequalChar, ss2);
-                    System.out.printf("%s{%c}%sc\n\n", ss1, offendingChar, ss2);
-                    return 1;
+                    return ;
                 }
             }
         }
-        return 0;
     }
 
 

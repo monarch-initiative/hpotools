@@ -7,7 +7,7 @@ public abstract class AbstractProportionalSampler<E>{
     protected List<E> elements;
     protected double[] probabilities;
     protected double[] cumulativeProbabilities;
-    protected Random random;
+    protected final Random random;
 
     public AbstractProportionalSampler(List<E> elements, double[] probabilities, Random random) {
         this.elements = elements;

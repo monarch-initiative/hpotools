@@ -23,6 +23,7 @@ public class Main implements Callable<Integer> {
                     .addSubcommand("mondo", new MondoCommand())
                     .addSubcommand("onset", new OnsetCommand())
                     .addSubcommand("simhpo", new SimHpoCommand())
+                    .addSubcommand("stats", new StatsCommand())
                     .addSubcommand("translate", new DiseaseTranslateCommand())
                     .addSubcommand("tsv", new Hpo2TsvCommand())
                     .addSubcommand("word", new WordCommand())

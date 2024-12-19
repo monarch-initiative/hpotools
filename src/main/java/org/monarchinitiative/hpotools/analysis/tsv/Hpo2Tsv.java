@@ -2,6 +2,8 @@ package org.monarchinitiative.hpotools.analysis.tsv;
 
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.ontology.data.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -11,7 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Hpo2Tsv {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(Hpo2Tsv.class);
     private final File outfile;
     private final Ontology ontology;
     private final TermId targetTermId;
@@ -26,9 +28,7 @@ public class Hpo2Tsv {
     public void createTsvFile() {
         List<String> lineList = new ArrayList<>();
         Optional<Term> targetOpt = ontology.termForTermId(targetTermId);
-        if (targetOpt.isPresent()) {
-            lineList.add(getTsvLine(targetOpt.get()));
-        }
+        targetOpt.ifPresent(term -> lineList.add(getTsvLine(term)));
         Iterable<TermId> children = ontology.graph().getDescendants(targetTermId);
         for (TermId tid : children) {
             Optional<Term> opt = ontology.termForTermId(tid);
@@ -47,7 +47,7 @@ public class Hpo2Tsv {
                 bw.write(line + "\n");
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
     }
 

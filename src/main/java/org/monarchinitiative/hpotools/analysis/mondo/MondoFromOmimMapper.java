@@ -54,9 +54,7 @@ public class MondoFromOmimMapper {
         for (TermId mondoId : ontology.allTermIds()) {
             if (mondoId.getPrefix().equals("MONDO")) {
                 Optional<TermId> opt = getOmimIdIfPossible(mondoId);
-                if (opt.isPresent()) {
-                    omimToMondoMap.put(opt.get().getValue(), mondoId);
-                }
+                opt.ifPresent(termId -> omimToMondoMap.put(termId.getValue(), mondoId));
             }
 
         }

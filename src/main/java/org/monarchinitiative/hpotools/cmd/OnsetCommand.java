@@ -224,11 +224,11 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
                         try {
                             writer.write(line + "\n");
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            LOGGER.error(e.getMessage());
                         }
                     });
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
     }
 

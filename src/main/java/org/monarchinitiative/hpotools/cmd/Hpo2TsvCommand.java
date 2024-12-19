@@ -30,7 +30,7 @@ public class Hpo2TsvCommand extends HPOCommand implements Callable<Integer> {
 
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         Ontology hpOntology = getHpOntology();
         TermId hpoId = TermId.of(startTermId);
         Optional<Term> opt = hpOntology.termForTermId(hpoId);
