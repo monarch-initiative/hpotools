@@ -1,5 +1,4 @@
 package org.monarchinitiative.hpotools.cmd;
-
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDisease;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseaseAnnotation;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
@@ -22,10 +21,10 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Callable;
 
-
 @CommandLine.Command(name = "onset",
         mixinStandardHelpOptions = true,
         description = "Calculate number of diseases with onset data")
+
 public class OnsetCommand extends HPOCommand implements Callable<Integer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(OnsetCommand.class);
     /** Terms such as Polydactyly that have a certain assignment to an age of onset (Congenital is taken
@@ -37,9 +36,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
     /** Congenital onset HP:0003577 */
     private final String CONGENITAL_ONSET = "HP:0003577";
     private final String EMPTY_STRING = "";
-
     private final String INFERRED_FROM_ELECTRONIC_ANNOTATION = "IEA";
-
     private final String C_ASPECT = "C";
     /**
      * Köhler S, et al. The Human Phenotype Ontology in 2021. Nucleic Acids Res. 2021;49(D1):D1207-D1217.
@@ -64,67 +61,40 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
             throw new PhenolRuntimeException("Need to specify annotpath path");
         }
 
+        // Load everything
         Ontology ontology = OntologyLoader.loadOntology(new File(hpopath));
-
-        HpoDiseaseLoaderOptions options = HpoDiseaseLoaderOptions.of(Set.of(DiseaseDatabase.OMIM), false, 5);
+        HpoDiseaseLoaderOptions options =
+                HpoDiseaseLoaderOptions.of(Set.of(DiseaseDatabase.OMIM), false, 5);
         HpoDiseaseLoader loader = HpoDiseaseLoaders.defaultLoader(ontology, options);
         HpoDiseases diseases = loader.load(Path.of(annotpath));
 
 
+        // Count current diseases with onset annotation in the phenotype.hpoa file and output
+        int diseasesWithOnsetInformation = (int) countDiseasesWithOnset(diseases);
+        System.out.println("[INFO] Current number of diseases with onset information: " + diseasesWithOnsetInformation);
 
+        // Count current diseases without onset annotation in the phenotype.hpoa file and output
+        int diseasesWithoutOnsetInformation = (int) countDiseasesWithoutOnset(diseases);
+        System.out.println("[INFO] Current number of diseases without onset information: " +
+                diseasesWithoutOnsetInformation);
 
-        // HPO terms that are asserted to always be congenital
+        // Parse Congenital terms from the text file and get the descendants of these HPO terms
         termIdToCongenitalOnsetSet = parseHpoTermToHpoOnsetMap(ontology);
-        Set<HpoDisease> congenitalDiseaseSet = new HashSet<>();
-        for (var disease: diseases) {
-            if (disease.diseaseOnset().isEmpty()) {
-                for  (HpoDiseaseAnnotation diseaseAnnotation : disease.annotations()) {
-                    if (diseaseAnnotation.frequency() > 0) {
-                        TermId hpoId = diseaseAnnotation.id();
-                        if (termIdToCongenitalOnsetSet.contains(hpoId)) {
-                            congenitalDiseaseSet.add(disease);
-                        }
-                    }
-                }
-            }
-        }
-        int n_inferred = 0;
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outfilePath))) {
-            for (HpoDisease disease : congenitalDiseaseSet) {
-                n_inferred++;
-                List<String> fields = new ArrayList<>();
-                // 0 #DatabaseID		Evidence Onset		Sex	Modifier	Aspect	Biocuration
-                fields.add(disease.id().getValue());
-                // 1  DiseaseName
-                fields.add(disease.diseaseName());
-                // 2 Qualifier
-                fields.add(EMPTY_STRING);
-                // 3 HPO_ID
-                fields.add(CONGENITAL_ONSET);
-                // 4 Reference
-                fields.add(HPO_PMID);
-                // 5 Evidence
-                fields.add(INFERRED_FROM_ELECTRONIC_ANNOTATION);
-                // 6 Onset (this field only used if annotation is feature
-                fields.add(EMPTY_STRING);
-                // 7 Frequency (we cannot inferred this)
-                fields.add(EMPTY_STRING);
-                // 8. Sex(we cannot inferred this)
-                fields.add(EMPTY_STRING);
-                // 9. Modifier n/a
-                fields.add(EMPTY_STRING);
-                // 10. Aspect
-                fields.add(C_ASPECT);
-                // 11. Biocuration
-                fields.add("HPO:probinson[2022-05-21]");
-                writer.write(String.join("\t", fields) + "\n");
-            }
+        // Update diseases that have any of these HPO terms with congenital age of onset
+        Set<HpoDisease> congenitalDiseaseSet = inferCongenitalDiseases(diseases, termIdToCongenitalOnsetSet);
+        System.out.println(String.format("[INFO] Inferred %d congenital onsets.", congenitalDiseaseSet.size()));
 
-        } catch (IOException e) {
-            LOGGER.error(e.getMessage());
-            return 1;
-        }
-        System.out.printf("[INFO] Inferred congenital onset for %d diseases.\n", n_inferred);
+        // Infer diseases to be congenital based on terms and write to file
+        System.out.println("[INFO] Writing inferred congenital diseases to: " + outfilePath);
+        writeCongenitalDiseasesToFile(congenitalDiseaseSet, outfilePath);
+
+        // Update and inform user of new total number of diseases with onset information
+        diseasesWithOnsetInformation = diseasesWithOnsetInformation + congenitalDiseaseSet.size();
+        diseasesWithoutOnsetInformation = diseasesWithoutOnsetInformation - congenitalDiseaseSet.size();
+
+        System.out.println("[INFO] New number of diseases with onset information " + diseasesWithOnsetInformation);
+        System.out.println("[INFO] New number of diseases without onset information " +
+                diseasesWithoutOnsetInformation);
         return 0;
     }
 
@@ -136,8 +106,9 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
             System.err.println("Could not read term2onset file");
             return Set.of();
         }
+
         Set<TermId> termSet = new HashSet<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(url.getFile()))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()))) {
             String line = br.readLine();
             while ((line = br.readLine()) != null) {
                 String[] fields = line.split(",");
@@ -150,7 +121,8 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
         }
-        // get all agenesis terms
+
+        // Get all agenesis terms
         for (Term term : ontology.getTerms()) {
             Set<String> labels = new HashSet<>();
             labels.add(term.getName().toLowerCase(Locale.ROOT));
@@ -166,7 +138,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         }
 
 
-
+        // Get descendants of congenital terms, as these are also congenital
         Set<TermId> TermSetWithDescendants = new HashSet<>();
         for (TermId tid : termSet) {
             TermSetWithDescendants.add(tid);
@@ -174,18 +146,116 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
                 TermSetWithDescendants.add(hpoId);
             }
         }
+
+
         return TermSetWithDescendants;
     }
 
+    /**
+     * Counts the number of diseases within the HpoDiseases collection that have a present onset annotation.
+     *
+     * @param diseases The HpoDiseases collection to analyse.
+     * @return The count of diseases with onset annotations.
+     */
+    public long countDiseasesWithOnset(HpoDiseases diseases) {
 
-    public void countCurrentOnsetAnnotations() {
-        // iterate over diseases and find diseases with onset annotations
+        return diseases.stream()
+                .filter(disease -> disease.diseaseOnset().isPresent())
+                .count();
+    }
+
+    /**
+     * Counts the number of diseases within the HpoDiseases collection that do not have a present onset annotation.
+     *
+     * @param diseases The HpoDiseases collection to analyse.
+     * @return The count of diseases without onset annotations.
+     */
+    public long countDiseasesWithoutOnset(HpoDiseases diseases){
+
+        return diseases.stream()
+                .filter(disease -> disease.diseaseOnset().isEmpty())
+                .count();
+    }
 
 
+    /**
+     * Identifies and returns diseases inferred to have a congenital onset based on their HPO annotations.
+     *
+     * @param diseases The HpoDiseases collection to analyze.
+     * @param congenitalOnsetTermIds A set of TermIds representing known congenital terms.
+     * @return A set of HpoDisease objects inferred to have congenital onset.
+     */
+    private Set<HpoDisease> inferCongenitalDiseases(HpoDiseases diseases, Set<TermId> congenitalOnsetTermIds) {
+        Set<HpoDisease> congenitalDiseaseSet = new HashSet<>();
+        for (HpoDisease disease : diseases) {
+            if (disease.diseaseOnset().isEmpty() && hasCongenitalAnnotation(disease, congenitalOnsetTermIds)) {
+                congenitalDiseaseSet.add(disease);
+            }
+        }
 
+        return congenitalDiseaseSet;
+    }
+
+    /**
+     * Checks if a disease has an HPO annotation that indicates congenital onset.
+     *
+     * @param disease The HpoDisease to check.
+     * @param congenitalOnsetTermIds A set of TermIds representing known congenital terms.
+     * @return True if the disease has a congenital annotation, false otherwise.
+     */
+    private boolean hasCongenitalAnnotation(HpoDisease disease, Set<TermId> congenitalOnsetTermIds) {
+        return disease.annotations().stream()
+                .filter(annotation -> annotation.frequency() > 0)
+                .map(HpoDiseaseAnnotation::id)
+                .anyMatch(congenitalOnsetTermIds::contains);
+    }
+
+    /**
+     * Writes the provided congenital diseases to a tab-separated file.
+     *
+     * @param diseases The set of HpoDisease objects to write.
+     * @param outFilePath The path to the output file.
+     */
+    private void writeCongenitalDiseasesToFile(Set<HpoDisease> diseases, String outFilePath) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outfilePath))) {
+            diseases.stream()
+                    .map(this::formatDiseaseData)
+                    .forEachOrdered(line -> {
+                        try {
+                            writer.write(line + "\n");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Formats the data of an HpoDisease object into a tab-separated line.
+     *
+     * @param disease The HpoDisease object.
+     * @return A tab-separated string representing the formatted disease data.
+     */
+    private String formatDiseaseData(HpoDisease disease) {
+        List<String> fields = Arrays.asList(
+                disease.id().getValue(),
+                disease.diseaseName(),
+                EMPTY_STRING,
+                CONGENITAL_ONSET,
+                HPO_PMID,
+                INFERRED_FROM_ELECTRONIC_ANNOTATION,
+                EMPTY_STRING,
+                EMPTY_STRING,
+                EMPTY_STRING,
+                EMPTY_STRING,
+                C_ASPECT,
+                "HPO:probinson[2022-05-21]"
+        );
+        return String.join("\t", fields);
     }
 
 
 
 }
-

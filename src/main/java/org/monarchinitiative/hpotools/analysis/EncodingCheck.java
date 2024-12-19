@@ -31,15 +31,17 @@ public class EncodingCheck {
     public void checkEncoding() {
 
         int i = 0;
+        int encodingErrors = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(hpoOwlFile))){
             String line;
             String hp_term = "";
+
             while ((line = br.readLine()) != null) {
                 Matcher m = HPO_TERM_PATTERN.matcher(line);
                 if (m.find()) {
                     hp_term = m.group();
                 }
-                checkLine(line, ++i, hp_term);
+                encodingErrors += checkLine(line, ++i, hp_term);
             }
         } catch (IOException e) {
             LOGGER.error("Could not read hpo owl file", e);
@@ -70,9 +72,12 @@ public class EncodingCheck {
                     String ss1 = line.substring(b, i);
                     String ss2 = line.substring(i+1, e);
                     System.out.printf("%s{%c}%sc\n\n", ss1, unequalChar, ss2);
+                    System.out.printf("%s{%c}%sc\n\n", ss1, offendingChar, ss2);
+                    return 1;
                 }
             }
         }
+        return 0;
     }
 
 
