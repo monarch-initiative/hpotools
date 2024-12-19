@@ -1,7 +1,6 @@
 package org.monarchinitiative.hpotools.cmd;
 
 
-import java.io.File;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
@@ -50,6 +49,10 @@ public class WordCommand extends HPOCommand implements Callable<Integer> {
         if (opt.isEmpty()) {
             System.err.printf("[ERROR] No HPO term found for %s.\n", startTermId);
         }
+        if (opt.isEmpty()) {
+            LOGGER.error("[ERROR] No term found for {}.", startTermId);
+            return 1;
+        }
         Term targetTerm = opt.get();
         if (outfilename == null) {
             String name = targetTerm.getName().replaceAll(" ", "_");
@@ -60,7 +63,7 @@ public class WordCommand extends HPOCommand implements Callable<Integer> {
         try {
            Hpo2Word hpo2Word = new Hpo2Word(outfilename, targetTerm, hpOntology);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
             return 1;
         }
         return 0;

@@ -1,18 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Extra logging related to initialization of Log4j.
  Set to debug or trace if log4j initialization is failing. -->
-<Configuration status="warn">
+<Configuration status="debug">
     <Appenders>
-        <!-- Console appender configuration -->
-        <Console name="console" target="SYSTEM_OUT">
-            <PatternLayout
-                    pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n" />
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n CRAP123"/>
         </Console>
+        <File name="File" fileName="hpotools.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"/>
+        </File>
     </Appenders>
+
+
     <Loggers>
-        <!-- Root logger referring to console appender -->
-        <Root level="TRACE" additivity="false">
-            <AppenderRef ref="console" />
+        <!-- Suppress logging from the specified library -->
+        <Logger name="org.monarchinitiative.phenol.io.obographs" level="off" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Logger>
+
+        <Root level="trace">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
         </Root>
     </Loggers>
 </Configuration>

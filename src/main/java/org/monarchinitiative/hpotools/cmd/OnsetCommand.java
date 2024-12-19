@@ -11,6 +11,8 @@ import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Term;
 import org.monarchinitiative.phenol.ontology.data.TermId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.*;
@@ -24,6 +26,7 @@ import java.util.concurrent.Callable;
         description = "Calculate number of diseases with onset data")
 
 public class OnsetCommand extends HPOCommand implements Callable<Integer> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OnsetCommand.class);
     /** Terms such as Polydactyly that have a certain assignment to an age of onset (Congenital is taken
      * here to comprise also antenatal). The map is derived from the file {@code term2onset.txt} in the
      * resources section.
@@ -77,7 +80,6 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
 
         // Parse Congenital terms from the text file and get the descendants of these HPO terms
         termIdToCongenitalOnsetSet = parseHpoTermToHpoOnsetMap(ontology);
-
         // Update diseases that have any of these HPO terms with congenital age of onset
         Set<HpoDisease> congenitalDiseaseSet = inferCongenitalDiseases(diseases, termIdToCongenitalOnsetSet);
         System.out.println(String.format("[INFO] Inferred %d congenital onsets.", congenitalDiseaseSet.size()));
@@ -93,7 +95,6 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         System.out.println("[INFO] New number of diseases with onset information " + diseasesWithOnsetInformation);
         System.out.println("[INFO] New number of diseases without onset information " +
                 diseasesWithoutOnsetInformation);
-
         return 0;
     }
 
@@ -118,7 +119,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
                 termSet.add(hpoId);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
 
         // Get all agenesis terms
@@ -140,7 +141,8 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         // Get descendants of congenital terms, as these are also congenital
         Set<TermId> TermSetWithDescendants = new HashSet<>();
         for (TermId tid : termSet) {
-            for (var hpoId: ontology.graph().getDescendants(tid, true)) {
+            TermSetWithDescendants.add(tid);
+            for (var hpoId: ontology.graph().getDescendants(tid)) {
                 TermSetWithDescendants.add(hpoId);
             }
         }

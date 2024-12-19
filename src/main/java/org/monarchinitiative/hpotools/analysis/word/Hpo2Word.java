@@ -4,7 +4,6 @@ package org.monarchinitiative.hpotools.analysis.word;
 
 import org.apache.poi.xwpf.usermodel.*;
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
-import org.monarchinitiative.phenol.ontology.algo.OntologyAlgorithm;
 import org.monarchinitiative.phenol.ontology.data.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,7 +155,7 @@ public class Hpo2Word {
         XWPFRun para3Run = para3.createRun();
         para3Run.setText(String.format("comment: %s\n", hpoTerm.getComment()));
         List<TermSynonym> syns = hpoTerm.getSynonyms();
-        if (syns.size()>0) {
+        if (!syns.isEmpty()) {
             XWPFParagraph para4 = document.createParagraph();
             para4.setAlignment(ParagraphAlignment.BOTH);
             XWPFRun para4Run = para4.createRun();
