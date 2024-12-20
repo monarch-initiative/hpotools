@@ -16,7 +16,6 @@ import java.util.concurrent.Callable;
     @CommandLine.Command(name = "stats",
             mixinStandardHelpOptions = true,
             description = "Calculate statistics for HPO attributes")
-
     public class StatsCommand extends HPOCommand implements Callable<Integer> {
         private static final Logger LOGGER = LoggerFactory.getLogger(StatsCommand.class);
         /** Terms such as Polydactyly that have a certain assignment to an age of onset (Congenital is taken
@@ -25,11 +24,14 @@ import java.util.concurrent.Callable;
          */
         private Set<TermId> termIdToCongenitalOnsetSet;
 
+        @CommandLine.Option(names = {"--previous"}, required = true)
+        private String previousHpoVersion;
 
         @Override
         public Integer call() {
             Ontology ontology = OntologyLoader.loadOntology(new File(hpopath));
-            HpoStats stats = new HpoStats(ontology);
+            Ontology old_ontology = OntologyLoader.loadOntology(new File(previousHpoVersion));
+            HpoStats stats = new HpoStats(ontology, old_ontology);
             stats.printStats();
             return 0;
         }
