@@ -20,6 +20,7 @@ public class Main implements Callable<Integer> {
             CommandLine cline = new CommandLine(new Main())
                     .addSubcommand("download", new DownloadCommand())
                     .addSubcommand("encoding", new EncodingCommand())
+                    .addSubcommand("maxo", new MaxoCommand())
                     .addSubcommand("mondo", new MondoCommand())
                     .addSubcommand("onset", new OnsetCommand())
                     .addSubcommand("simhpo", new SimHpoCommand())

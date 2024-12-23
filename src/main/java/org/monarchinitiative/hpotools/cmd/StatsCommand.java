@@ -1,6 +1,6 @@
 package org.monarchinitiative.hpotools.cmd;
 
-import org.monarchinitiative.hpotools.analysis.HpoStats;
+import org.monarchinitiative.hpotools.analysis.stats.HpoStats;
 import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.TermId;
@@ -27,11 +27,18 @@ import java.util.concurrent.Callable;
         @CommandLine.Option(names = {"--previous"}, required = true)
         private String previousHpoVersion;
 
+        @CommandLine.Option(names = {"--mp"}, required = false)
+        private boolean showMultipleParentage = false;
+
         @Override
         public Integer call() {
             Ontology ontology = OntologyLoader.loadOntology(new File(hpopath));
             Ontology old_ontology = OntologyLoader.loadOntology(new File(previousHpoVersion));
-            HpoStats stats = new HpoStats(ontology, old_ontology);
+            HpoStats stats = new HpoStats(ontology, old_ontology, annotpath);
+            if (showMultipleParentage) {
+                stats.showMultipleParentage();
+                return 0;
+            }
             stats.printStats();
             return 0;
         }

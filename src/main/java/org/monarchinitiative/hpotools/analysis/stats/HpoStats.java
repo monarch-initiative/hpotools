@@ -1,75 +1,45 @@
-package org.monarchinitiative.hpotools.analysis;
+package org.monarchinitiative.hpotools.analysis.stats;
 
-import org.monarchinitiative.phenol.base.PhenolRuntimeException;
-import org.monarchinitiative.phenol.ontology.algo.OntologyAlgorithm;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.Term;
 import org.monarchinitiative.phenol.ontology.data.TermId;
-import org.monarchinitiative.phenol.ontology.data.TermSynonym;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class HpoStats {
-    private final Ontology ontology;
+public class HpoStats extends JsonOntologyStats {
 
     private final Ontology oldOntology;
-    private final String HP_PREFIX = "HP";
+    private final static String HP_PREFIX = "HP";
 
-    private final Set<Term> nonObsoleteTerms;
 
     private final Date cutoffDate;
 
     private final static String DEFAULT_DATE = "2020-01-01";
 
+    private final HpoaStats hpoaStats;
 
-
-    public HpoStats(Ontology ontology, Ontology old_ontology, String dateString) {
-        this.ontology = ontology;
+    public HpoStats(Ontology ontology,
+                    Ontology old_ontology,
+                    String phenotypeHpoa,
+                    String dateString) {
+        super(ontology, HP_PREFIX);
         this.oldOntology = old_ontology;
         LocalDate ld = LocalDate.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE);
         this.cutoffDate = Date.from(ld.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        nonObsoleteTerms = new HashSet<>();
-        for (TermId tid :ontology.nonObsoleteTermIds()) {
-            Optional<Term> opt = ontology.termForTermId(tid);
-            if (!opt.isPresent()) {
-                throw new PhenolRuntimeException("Could not find term " + tid + " in ontology");
-            }
-            Term term = opt.get();
-            if (!term.id().getPrefix().equals(HP_PREFIX))
-                continue;
-            nonObsoleteTerms.add(term);
-        }
+        hpoaStats = new HpoaStats(new File(phenotypeHpoa), ontology);
     }
 
-    public HpoStats(Ontology ontology, Ontology old_ontology) {
-        this(ontology, old_ontology, DEFAULT_DATE);
+    public HpoStats(Ontology ontology, Ontology old_ontology, String phenotypeHpoa) {
+        this(ontology, old_ontology, phenotypeHpoa, DEFAULT_DATE);
     }
 
-    private int countTermsWithDefinition() {
-        int n_with_def = 0;
-        for (Term term: nonObsoleteTerms) {
-            if (!term.id().getPrefix().equals(HP_PREFIX))
-                continue;
-            String def = term.getDefinition();
-            if (!def.isEmpty()) n_with_def++;
-        }
-        return n_with_def;
-    }
 
-    private int countTermsWithSynonym() {
-        int n_with_synonym = 0;
-        for (Term term: nonObsoleteTerms) {
-            if (!term.id().getPrefix().equals(HP_PREFIX))
-                continue;
-            List<TermSynonym> synonyms = term.getSynonyms();
-            if (!synonyms.isEmpty()) n_with_synonym++;
-        }
-        return n_with_synonym;
 
-    }
+
 
     private int termsSinceDate(TermId tid) {
         int n_since_date = 0;
@@ -100,15 +70,24 @@ public class HpoStats {
         System.out.printf("%d Other new terms\n", other_new);
     }
 
-    public void test() {
-        TermId phenotypeRoot = TermId.of("HP:0000002");
-        Optional<Term> opt = ontology.termForTermId(phenotypeRoot);
-        Term term = opt.orElse(null);
-        System.out.println(term);
-
+    public void getTotalTermCounts() {
+        int n_total = ontology.nonObsoleteTermIdCount();
+        TermId rootTermId = ontology.getRootTermId();
+        Set<TermId> children = ontology.graph().getChildren(rootTermId);
+        System.out.println("*****************");
+        System.out.println("Total terms: " + n_total);
+        for (TermId child: children) {
+            Set<TermId> terms = new HashSet<>();
+            terms.add(child);
+            for (var t : ontology.graph().getDescendants(child)) {
+                terms.add(t);
+            }
+            Term term = ontology.termForTermId(child).get();
+            System.out.printf("%s (%s): %d total terms\n.",
+                    term.getName(), term.id().getValue(), terms.size());
+        }
 
     }
-
 
 
     public void printStats() {
@@ -122,8 +101,26 @@ public class HpoStats {
         System.out.printf("Terms with synonyms: %d/%d (%.1f%%).\n",
                 nWithSynonym, n_non_obsolete, (100.0*nWithSynonym/n_non_obsolete));
         termUpdates();
-
+        getTotalTermCounts();
+        hpoaStats.printStatistics();
     }
 
 
+    public void showMultipleParentage() {
+        for (Term term: nonObsoleteTerms) {
+            if (!term.id().getPrefix().equals(HP_PREFIX))
+                continue;
+            Set<TermId> parents = ontology.graph().getParents(term.id());
+            if (parents.size()>1) {
+                System.out.printf("%s (%s):\n", term.getName(), term.id().getValue());
+                for (TermId parentId: parents) {
+                    Optional<Term> opt = ontology.termForTermId(parentId);
+                    if (opt.isPresent()) {
+                        Term parent = opt.get();
+                        System.out.printf("\t%s (%s)\n", parent.getName(), parent.id().getValue());
+                    }
+                }
+            }
+        }
+    }
 }
