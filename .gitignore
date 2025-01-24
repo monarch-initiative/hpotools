@@ -23,9 +23,9 @@
 hs_err_pid*
 replay_pid*
 
-/.idea/
-/data/
-/target/
-/candidates.tsv
+.idea/
+data/
+target/
+candidates.*
 /candidates/
 .DS_Store
