@@ -1,6 +1,7 @@
 package org.monarchinitiative.hpotools.cmd;
 import org.apache.commons.math3.stat.inference.ChiSquareTest;
 import org.monarchinitiative.hpotools.analysis.stats.ExactMultinomial;
+import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.Term;
 import org.monarchinitiative.phenol.ontology.data.TermId;
@@ -21,58 +22,128 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        final int PSEUDOCOUNT = 5;
-        Map<TermId, Integer> actualHpoCounts = new HashMap<>();
         Ontology hpOntology = getHpOntology();
-        Set<TermId> children = hpOntology.graph().getChildren(TermId.of("HP:0000118"));
-        for (TermId termId : children) {
-            // get number of descendants for each top level term
-            Set<TermId> descendants = hpOntology.graph().getDescendantSet(termId);
-            actualHpoCounts.put(termId, descendants.size() + 1); // +1 to include term itself
-        }
+        // Key - ID of a top level term, value: counts of descendents in the HPO
+        List<Map.Entry<TermId, Integer>> topLevelHpoTermCounts = getTopLevelTermList(hpOntology);
+        Map<TermId, String> topLevelHpoLabels = getLabels(topLevelHpoTermCounts, hpOntology);
         Map<TermId, Integer> observedHpoCounts = observedHpoCounts();
-        int total = observedHpoCounts.values().stream().mapToInt(Integer::intValue).sum();
-        List<TermId> topLevelTermList = new ArrayList<>(actualHpoCounts.keySet());
-        int n = topLevelTermList.size();
-        double [] expected = new double[n];
-        long [] observed = new long[n];
-        int i = 0;
-        for (TermId termId : topLevelTermList) {
-            double proportion = (PSEUDOCOUNT +(double)observedHpoCounts.getOrDefault(termId, 0)) / actualHpoCounts.get(termId);
-            double expectedProportion  = proportion * total;
-            expected[i] = expectedProportion;
-            observed[i] = PSEUDOCOUNT + observedHpoCounts.getOrDefault(termId, 0);
-            System.out.println(expected[i] + "e  o" + observed[i]);
-            i++;
-        }
+        int [] orderedObservedCounts = getOrderedObservedCounts(topLevelHpoTermCounts, observedHpoCounts);
+        double [] expectedProportions = getExpectedProportions(topLevelHpoTermCounts);
+        double probability = ExactMultinomial.exactMultinomialTest(orderedObservedCounts, expectedProportions);
+        System.out.println("Exact multinomial p value " + probability);
+        outputProprotions(topLevelHpoTermCounts, orderedObservedCounts, expectedProportions, topLevelHpoLabels);
+        /*
         ChiSquareTest chiSquareTest = new ChiSquareTest();
-        double pValue = chiSquareTest.chiSquareTest(expected, observed);
-        double chiSquareStatistic = chiSquareTest.chiSquare(expected, observed);
+        double pValue = chiSquareTest.chiSquareTest(expected, observedCounts);
+        double chiSquareStatistic = chiSquareTest.chiSquare(expected, observedCounts);
 
         // Output the results
         System.out.println("Chi-Square Statistic: " + chiSquareStatistic);
         System.out.println("P-Value: " + pValue);
         // Exact multinomal
-        double probability = ExactMultinomial.exactMultinomialTest(observed, expected);
+        double probability = ExactMultinomial.exactMultinomialTest(observedCounts, expected);
         System.out.println("Exact multinomial p value " + probability);
-
-        i = 0;
-        for (TermId termId : topLevelTermList) {
-            int obs = actualHpoCounts.getOrDefault(termId, 0);
-            double exp = PSEUDOCOUNT +(double)observedHpoCounts.getOrDefault(termId, 0);
-            double percObserved = 100.0 * obs / total;
-            double percExpected = 100.0 * exp / total;
-            Optional<Term> opt = hpOntology.termForTermId(termId);
-            if (opt.isPresent()) {
-                Term term = opt.get();
-                String label = term.getName();
-                System.out.printf("%s (%s) observed: %.1f; expected: %.1f%n",
-                        label, termId.getValue(), percObserved, percExpected);
-            }
-            i++;
-        }
+    */
 
         return 0;
+    }
+
+    private void outputProprotions(List<Map.Entry<TermId, Integer>> topLevelHpoTermCounts,
+                                   int[] orderedObservedCounts,
+                                   double[] expectedProportions,
+                                   Map<TermId, String> topLevelHpoLabels) {
+        double [] observedProportions = new double[orderedObservedCounts.length];
+        int totalObservedCounts = Arrays.stream(orderedObservedCounts).sum();
+        int N = orderedObservedCounts.length;
+        for (int i = 0; i < N; i++) {
+            observedProportions[i] = (double) orderedObservedCounts[i] / totalObservedCounts;
+        }
+        String header = String.join("\t", "HPO", "ID", "Observed", "Expected");
+        System.out.println(header);
+        for (int i = 0; i < N; i++) {
+            TermId termId = topLevelHpoTermCounts.get(i).getKey();
+            String label = topLevelHpoLabels.get(termId);
+            String observed = String.format("%.1f%%", 100 * observedProportions[i]);
+            String expected = String.format("%.1f%%", 100 * expectedProportions[i]);
+            String line = String.join("\t", label, termId.getValue(), observed, expected);
+            System.out.println(line);
+        }
+
+    }
+
+    /**
+     * Create an array with observed counts and arrange it in the same order
+     * @param topLevelHpoTermCounts List with top-level HPO terms in order
+     * @param observedHpoCounts map with counts observed in an experiment
+     * @return
+     */
+    private int[] getOrderedObservedCounts(List<Map.Entry<TermId, Integer>> topLevelHpoTermCounts, Map<TermId, Integer> observedHpoCounts) {
+        int[] observed_counts = new int[topLevelHpoTermCounts.size()];
+        int n_identified = 0;
+        int i=0;
+        for (var e: topLevelHpoTermCounts) {
+            TermId termId = e.getKey();
+            if (observedHpoCounts.containsKey(termId)) {
+                observed_counts[i++] = observedHpoCounts.get(termId);
+                n_identified++;
+            } else {
+                observed_counts[i++] = 0;
+            }
+        }
+        if (n_identified != observedHpoCounts.size()) {
+            throw new PhenolRuntimeException("Did not find all observed HPO term counts (needs to be checked)");
+        }
+        return observed_counts;
+    }
+
+    private double[] getExpectedProportions(List<Map.Entry<TermId, Integer>> topLevelHpoTermCounts) {
+        // The following gets the total number of terms underneath PhenotypicAbnormality
+        int total = topLevelHpoTermCounts.stream().map(Map.Entry::getValue).mapToInt(Integer::intValue).sum();
+        int N = topLevelHpoTermCounts.size();
+        double [] expected = new double[N];
+        for (int i = 0; i < N; i++) {
+            expected[i] = (double) topLevelHpoTermCounts.get(i).getValue() / total;
+        }
+        return expected;
+    }
+
+    /**
+     * Get a list of the top level terms, ordered by total number of children
+     * @param hpo
+     * @return A list of Map Entries, with key the TermId and value the count
+     */
+    private List<Map.Entry<TermId, Integer>> getTopLevelTermList(Ontology hpo) {
+        Map<TermId, Integer> actualHpoCounts = new HashMap<>();
+        Set<TermId> children = hpo.graph().getChildren(TermId.of("HP:0000118"));
+        for (TermId termId : children) {
+            // get number of descendants for each top level term
+            Set<TermId> descendants = hpo.graph().getDescendantSet(termId);
+            actualHpoCounts.put(termId, descendants.size() + 1); // +1 to include term itself
+        }
+        // Sort the map by value in descending order
+        List<Map.Entry<TermId, Integer>> sortedEntries = new ArrayList<>(actualHpoCounts.entrySet());
+        sortedEntries.sort((entry1, entry2) -> entry2.getValue().compareTo(entry1.getValue()));
+        return sortedEntries;
+    }
+
+    private Map<TermId, String> getLabels(List<Map.Entry<TermId, Integer>> entries,
+                                          Ontology hpo) {
+        Map<TermId, String> id2labelMap = new HashMap<>();
+        for (var e: entries) {
+            Optional<String> opt = hpo.getTermLabel(e.getKey());
+            if (opt.isPresent()) {
+                id2labelMap.put(e.getKey(), opt.get());
+            } else {
+                throw new PhenolRuntimeException("Could not get label for " + e.getKey().getValue());
+            }
+        }
+        return id2labelMap;
+    }
+
+
+
+    private void printPercentages(Map<TermId, Integer> observedHpoCounts) {
+
     }
 
 
