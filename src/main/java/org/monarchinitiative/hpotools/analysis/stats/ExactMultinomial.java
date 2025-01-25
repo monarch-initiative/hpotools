@@ -1,11 +1,6 @@
 package org.monarchinitiative.hpotools.analysis.stats;
 
-import java.math.BigDecimal;
-
 import org.apache.commons.math3.util.CombinatoricsUtils;
-
-import java.math.RoundingMode;
-import java.util.Arrays;
 
 public class ExactMultinomial {
 

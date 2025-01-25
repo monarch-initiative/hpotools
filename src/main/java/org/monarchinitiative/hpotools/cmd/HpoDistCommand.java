@@ -1,9 +1,7 @@
 package org.monarchinitiative.hpotools.cmd;
-import org.apache.commons.math3.stat.inference.ChiSquareTest;
 import org.monarchinitiative.hpotools.analysis.stats.ExactMultinomial;
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
-import org.monarchinitiative.phenol.ontology.data.Term;
 import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +34,6 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
         ChiSquareTest chiSquareTest = new ChiSquareTest();
         double pValue = chiSquareTest.chiSquareTest(expected, observedCounts);
         double chiSquareStatistic = chiSquareTest.chiSquare(expected, observedCounts);
-
-        // Output the results
-        System.out.println("Chi-Square Statistic: " + chiSquareStatistic);
-        System.out.println("P-Value: " + pValue);
-        // Exact multinomal
-        double probability = ExactMultinomial.exactMultinomialTest(observedCounts, expected);
-        System.out.println("Exact multinomial p value " + probability);
     */
 
         return 0;

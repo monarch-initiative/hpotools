@@ -23,7 +23,7 @@ public class MaxoDxAnnotTest {
 
     @Test
     public void testHpoId() {
-        TermId expected = TermId.of(fields.get(0));
+        TermId expected = TermId.of(fields.getFirst());
         assertEquals(expected, dxAnnot.hpoId());
     }
 

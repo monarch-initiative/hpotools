@@ -2,28 +2,16 @@ package org.monarchinitiative.hpotools.cmd;
 
 
 import org.monarchinitiative.hpotools.analysis.mondo.MondoFromOmimMapper;
-import org.monarchinitiative.hpotools.analysis.mondo.NarrowAndBroadTerms;
-import org.monarchinitiative.hpotools.analysis.mondo.PpktResolver;
-import org.monarchinitiative.hpotools.analysis.mondo.PpktStoreItem;
-import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDisease;
-import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
-import org.monarchinitiative.phenol.annotations.io.hpo.DiseaseDatabase;
-import org.monarchinitiative.phenol.annotations.io.hpo.HpoDiseaseLoader;
-import org.monarchinitiative.phenol.annotations.io.hpo.HpoDiseaseLoaderOptions;
-import org.monarchinitiative.phenol.annotations.io.hpo.HpoDiseaseLoaders;
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
-import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.*;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(name = "onset",

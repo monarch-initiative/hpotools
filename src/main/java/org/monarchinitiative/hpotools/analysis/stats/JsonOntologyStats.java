@@ -21,7 +21,7 @@ public abstract class JsonOntologyStats {
         nonObsoleteTerms = new HashSet<>();
         for (TermId tid :ontology.nonObsoleteTermIds()) {
             Optional<Term> opt = ontology.termForTermId(tid);
-            if (!opt.isPresent()) {
+            if (opt.isEmpty()) {
                 throw new PhenolRuntimeException("Could not find term " + tid + " in ontology");
             }
             Term term = opt.get();

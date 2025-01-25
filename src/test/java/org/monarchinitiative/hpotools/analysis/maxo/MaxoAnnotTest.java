@@ -29,7 +29,7 @@ public class MaxoAnnotTest {
 
     @Test
     public void testDiseaseId() {
-        TermId diseaseId = TermId.of(fields.get(0));
+        TermId diseaseId = TermId.of(fields.getFirst());
         assertEquals(diseaseId, maxoAnnot.diseaseId());
     }
 

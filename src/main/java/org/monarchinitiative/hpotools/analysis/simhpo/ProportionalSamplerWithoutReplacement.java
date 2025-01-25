@@ -13,15 +13,15 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
         if (elements.isEmpty()) {
             throw new IllegalStateException("The list of elements is empty.");
         } else if (elements.size() == 1) {
-            E element = elements.get(0);
-            elements = new ArrayList<E>();
+            E element = elements.getFirst();
+            elements = new ArrayList<>();
             return element;
         }
         E sampled = super.sample();
 
         int selectedIndex = elements.indexOf(sampled);
 
-        elements = new ArrayList<E>(elements);
+        elements = new ArrayList<>(elements);
         elements.remove(selectedIndex);
 
         double[] newProbabilities = new double[probabilities.length - 1];
@@ -47,7 +47,7 @@ public class ProportionalSamplerWithoutReplacement<E> extends ProportionalSample
         } else if (n > elements.size()) {
             throw new IllegalArgumentException("The number of samples must be less than the number of elements.");
         }
-        List<E> selectedElements = new ArrayList<E>();
+        List<E> selectedElements = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             selectedElements.add(sample());
         }

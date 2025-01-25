@@ -82,7 +82,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         termIdToCongenitalOnsetSet = parseHpoTermToHpoOnsetMap(ontology);
         // Update diseases that have any of these HPO terms with congenital age of onset
         Set<HpoDisease> congenitalDiseaseSet = inferCongenitalDiseases(diseases, termIdToCongenitalOnsetSet);
-        System.out.println(String.format("[INFO] Inferred %d congenital onsets.", congenitalDiseaseSet.size()));
+        System.out.printf("[INFO] Inferred %d congenital onsets.%n", congenitalDiseaseSet.size());
 
         // Infer diseases to be congenital based on terms and write to file
         System.out.println("[INFO] Writing inferred congenital diseases to: " + outfilePath);
