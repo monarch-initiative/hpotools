@@ -7,6 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -42,22 +45,27 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
     private void outputProprotions(List<Map.Entry<TermId, Integer>> topLevelHpoTermCounts,
                                    int[] orderedObservedCounts,
                                    double[] expectedProportions,
-                                   Map<TermId, String> topLevelHpoLabels) {
+                                   Map<TermId, String> topLevelHpoLabels)  {
         double [] observedProportions = new double[orderedObservedCounts.length];
         int totalObservedCounts = Arrays.stream(orderedObservedCounts).sum();
         int N = orderedObservedCounts.length;
         for (int i = 0; i < N; i++) {
             observedProportions[i] = (double) orderedObservedCounts[i] / totalObservedCounts;
         }
-        String header = String.join("\t", "HPO", "ID", "Observed", "Expected");
-        System.out.println(header);
-        for (int i = 0; i < N; i++) {
-            TermId termId = topLevelHpoTermCounts.get(i).getKey();
-            String label = topLevelHpoLabels.get(termId);
-            String observed = String.format("%.1f%%", 100 * observedProportions[i]);
-            String expected = String.format("%.1f%%", 100 * expectedProportions[i]);
-            String line = String.join("\t", label, termId.getValue(), observed, expected);
-            System.out.println(line);
+        String header = String.join("\t", "HPO", "ID","Count", "Observed", "Expected");
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("distribution-hpo.txt"))) {
+            bw.write(header + "\n");
+            for (int i = 0; i < N; i++) {
+                TermId termId = topLevelHpoTermCounts.get(i).getKey();
+                String label = topLevelHpoLabels.get(termId);
+                String observedCount = String.valueOf(orderedObservedCounts[i]);
+                String observed = String.format("%.1f%%", 100 * observedProportions[i]);
+                String expected = String.format("%.1f%%", 100 * expectedProportions[i]);
+                String line = String.join("\t", label,  termId.getValue(), observedCount, observed, expected);
+                bw.write(line + "\n");
+            }
+        } catch ( IOException e) {
+            e.printStackTrace();
         }
 
     }
@@ -139,42 +147,44 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
 
 
 
+
+
     private Map<TermId, Integer> observedHpoCounts() {
         Map<TermId, Integer> hpoCounts = new HashMap<>();
-        // Abnormality of the nervous system
-        hpoCounts.put(TermId.of("HP:0000707"), 39);
         // Abnormality of the musculoskeletal system
-        hpoCounts.put(TermId.of("HP:0033127"), 31);
+        hpoCounts.put(TermId.of("HP:0033127"), 38);
+        // Abnormality of the nervous system
+        hpoCounts.put(TermId.of("HP:0000707"), 37);
         //Abnormality of limbs
-        hpoCounts.put(TermId.of("HP:0040064"), 14);
+        hpoCounts.put(TermId.of("HP:0040064"), 19);
         //Abnormality of the cardiovascular system
         hpoCounts.put(TermId.of("HP:0001626"), 11);
         //Neoplasm
-        hpoCounts.put(TermId.of("HP:0002664"), 11);
+        hpoCounts.put(TermId.of("HP:0002664"), 13);
         // Abnormality of head or neck
-        hpoCounts.put(TermId.of("HP:0000152"), 10);
+        hpoCounts.put(TermId.of("HP:0000152"), 8);
         // Abnormality of the eye
-        hpoCounts.put(TermId.of("HP:0000478"), 7);
+        hpoCounts.put(TermId.of("HP:0000478"), 6);
         // Abnormality of the integument
-        hpoCounts.put(TermId.of("HP:0001574"), 5);
+        hpoCounts.put(TermId.of("HP:0001574"), 8);
         // Growth abnormality
-        hpoCounts.put(TermId.of("HP:0001507"), 5);
+        hpoCounts.put(TermId.of("HP:0001507"), 6);
+        // Abnormality of blood and blood-forming tissues
+        hpoCounts.put(TermId.of("HP:0001871"), 6);
         // Abnormality of the immune system
         hpoCounts.put(TermId.of("HP:0002715"), 5);
-        // Abnormality of blood and blood-forming tissues
-        hpoCounts.put(TermId.of("HP:0001871"), 5);
         // Abnormality of the digestive system
-        hpoCounts.put(TermId.of("HP:0025031"), 2);
-        // Abnormality of the respiratory system
-        hpoCounts.put(TermId.of("HP:0002086"), 2);
+        hpoCounts.put(TermId.of("HP:0025031"), 3);
+        // Abnormality of the ear HP:0000598
+        hpoCounts.put(TermId.of("HP:0000598"), 2);
         // Abnormality of metabolism/homeostasis
         hpoCounts.put(TermId.of("HP:0001939"), 2);
         // Abnormality of the endocrine system
         hpoCounts.put(TermId.of("HP:0000818"), 1);
         //Abnormal cellular phenotype
         hpoCounts.put(TermId.of("HP:0025354"), 1);
-        //  Abnormality of the genitourinary system
-        hpoCounts.put(TermId.of("HP:0000119"), 1);
+        // Abnormality of the respiratory system
+        hpoCounts.put(TermId.of("HP:0002086"), 1);
         return hpoCounts;
     }
 
