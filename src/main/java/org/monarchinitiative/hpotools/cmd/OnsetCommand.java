@@ -1,5 +1,4 @@
 package org.monarchinitiative.hpotools.cmd;
-import org.apache.poi.ss.formula.functions.T;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDisease;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseaseAnnotation;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
@@ -69,13 +68,12 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         System.out.println("[INFO] HPO version: " + hpoVersion);
         // Parse Congenital terms from the text file and get the descendants of these HPO terms
         termIdToCongenitalOnsetSet = parseHpoTermToHpoOnsetMap(ontology);
+        System.out.printf("[INFO] Congenital onset HPO terms: %d.\n", termIdToCongenitalOnsetSet.size());
         HpoDiseaseLoaderOptions options =
                 HpoDiseaseLoaderOptions.of(Set.of(DiseaseDatabase.OMIM), false, 5);
         HpoDiseaseLoader loader = HpoDiseaseLoaders.defaultLoader(ontology, options);
         HpoDiseases diseases = loader.load(Path.of(annotpath));
-
-
-
+        System.out.printf("[INFIO] Total disease models: %d\n", diseases.size());
         // Count current diseases with onset annotation in the phenotype.hpoa file and output
         int diseasesWithOnsetInformation = (int) countDiseasesWithOnset(diseases);
         System.out.println("[INFO] Current number of diseases with onset information: " + diseasesWithOnsetInformation);
@@ -117,7 +115,8 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
 
         Set<TermId> termSet = new HashSet<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()))) {
-            String line = br.readLine();
+            br.readLine();
+            String line;
             while ((line = br.readLine()) != null) {
                 String[] fields = line.split(",");
                 if (fields.length != 2) {
@@ -129,33 +128,34 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
         }
-
-        // Get all agenesis terms
+        TermId  HFB = TermId.of("HP:0002692"); //         Hypoplastic facial bones
+        System.err.printf("[INFO] Congenital onset terms from file: %d\n", termSet.size());// Get all agenesis terms
         for (Term term : ontology.getTerms()) {
             Set<String> labels = new HashSet<>();
             String termLabel = term.getName().toLowerCase(Locale.ROOT);
             labels.add(termLabel);
 
             for (var lbl : labels) {
+                if (lbl.contains("aplasia/hypoplasia") || lbl.contains("hypoplasia/aplasia")) {
+                    continue; // Not guaranteed to be congenital, but might be picked up by
+                    // the following heuristic
+                    // e.g., Aplasia/Hypoplasia of facial bones HP:0034261
+                }
                 if (lbl.contains("agenesis") || lbl.contains("aplasia") || lbl.contains("supernumerary")
                         || lbl.contains("situs inversus") || lbl.contains("situs ambiguous")) {
                     termSet.add(term.id());
                 }
             }
         }
-
-
         // Get descendants of congenital terms, as these are also congenital
         Set<TermId> TermSetWithDescendants = new HashSet<>();
         for (TermId tid : termSet) {
             TermSetWithDescendants.add(tid);
             for (var hpoId: ontology.graph().getDescendants(tid)) {
+                /// leave out descendents of terms with Hypoplasia/Aplasia
                 TermSetWithDescendants.add(hpoId);
             }
         }
-        TermId  tid = TermId.of("HP:0002692");
-        System.err.println(TermSetWithDescendants.contains(tid) + " contains bad");
-
         return TermSetWithDescendants;
     }
 
@@ -211,7 +211,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
      *
      * @param disease The HpoDisease to check.
      * @param congenitalOnsetTermIds A set of TermIds representing known congenital terms.
-     * @return True if the disease has a congenital annotation, false otherwise.
+     * @return Potentially empty list of congenital HPO term annotations for a disease.
      */
     private List<TermId> getCongenitalAnnotationList(HpoDisease disease, Set<TermId> congenitalOnsetTermIds) {
         return disease.annotations().stream()
@@ -293,7 +293,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
 
             }
         } catch (IOException e) {
-            System.err.println(e);
+            LOGGER.error(e.getMessage());
         }
     }
 

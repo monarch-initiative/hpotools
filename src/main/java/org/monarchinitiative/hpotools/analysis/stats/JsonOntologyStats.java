@@ -53,7 +53,7 @@ public abstract class JsonOntologyStats {
     }
 
     protected String version() {
-        return ontology.version().get();
+        return ontology.version().orElseThrow();
     }
 
     protected int nonObsoleteTermCount() {

@@ -97,7 +97,7 @@ public class HpoaStats {
                 if (sex != null && (sex.equalsIgnoreCase("MALE") || sex.equalsIgnoreCase("FEMALE"))) {
                     lineWithSexInfoByDb.merge(diseaseId.getPrefix(), 1, Integer::sum);
                 }
-                if (modifiers != null && modifiers.trim().length() > 0) {
+                if (modifiers != null && !modifiers.trim().isEmpty()) {
                     lineWithModifierByDb.merge(diseaseId.getPrefix(), 1, Integer::sum);
                 }
                 if (ontology.graph().isDescendantOf(hpoID, ONSET_ID)) {
@@ -141,7 +141,7 @@ public class HpoaStats {
         }
         int total_omim = diseaseCountByDb.getOrDefault("OMIM", 0);
         int total_orpha = diseaseCountByDb.getOrDefault("ORPHA", 0);
-        int total_decipher = diseaseCountByDb.getOrDefault("DECIPHER", 0);;
+        int total_decipher = diseaseCountByDb.getOrDefault("DECIPHER", 0);
         System.out.println("Diseases with onset information");
         double omimPerc = 100d*omim/total_omim;
         double orphaPerc = 100d*orpha/total_orpha;

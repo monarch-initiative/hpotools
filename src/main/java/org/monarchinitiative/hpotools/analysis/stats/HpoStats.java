@@ -82,7 +82,7 @@ public class HpoStats extends JsonOntologyStats {
             for (var t : ontology.graph().getDescendants(child)) {
                 terms.add(t);
             }
-            Term term = ontology.termForTermId(child).get();
+            Term term = ontology.termForTermId(child).orElseThrow();
             System.out.printf("%s (%s): %d total terms\n.",
                     term.getName(), term.id().getValue(), terms.size());
         }
@@ -91,8 +91,8 @@ public class HpoStats extends JsonOntologyStats {
 
 
     public void printStats() {
-        System.out.printf("HPO version (current): %s\n",ontology.version().get());
-        System.out.printf("HPO version (previous): %s\n",oldOntology.version().get());
+        System.out.printf("HPO version (current): %s\n",ontology.version().orElseThrow());
+        System.out.printf("HPO version (previous): %s\n",oldOntology.version().orElseThrow());
         int n_non_obsolete = ontology.nonObsoleteTermIdCount();
         int n_with_def = countTermsWithDefinition();
         System.out.printf("Terms with definition: %d/%d (%.1f%%).\n",

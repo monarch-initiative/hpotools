@@ -65,7 +65,7 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
                 bw.write(line + "\n");
             }
         } catch ( IOException e) {
-            e.printStackTrace();
+            LOGGER.error(e.getMessage());
         }
 
     }

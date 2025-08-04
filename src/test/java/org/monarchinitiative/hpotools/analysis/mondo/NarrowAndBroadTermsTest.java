@@ -28,7 +28,7 @@ public class NarrowAndBroadTermsTest {
         assertNotNull(nbterms);
         TermId als1 = TermId.of("MONDO:0007103");
         Optional<Term> opt = mondo.termForTermId(als1);
-        assertEquals("amyotrophic lateral sclerosis type 1", opt.get().getName());
+        assertEquals("amyotrophic lateral sclerosis type 1", opt.orElseThrow().getName());
         // familial amyotrophic lateral sclerosis
         TermId familialAls = TermId.of("MONDO:0005144");
         OntologyTerm narrowOntologyTerm = nbterms.getNarrowTermId(als1);

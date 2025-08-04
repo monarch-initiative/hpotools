@@ -41,7 +41,7 @@ public class SimulatedHpoDiseaseGenerator {
 
     /**
      * Generates a simulated Phenopacket based on the specified OMIM ID and number of HPO terms.
-     *
+     * <p>
      * This method performs the following steps:
      * 1. Extracts the OMIM ID (e.g., OMIM:123456) from the provided "diseases" list. If the OMIM ID is not present,
      *      an error is thrown.
