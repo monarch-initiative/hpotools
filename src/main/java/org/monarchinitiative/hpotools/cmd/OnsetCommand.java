@@ -38,6 +38,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
     private final String EMPTY_STRING = "";
     private final String INFERRED_FROM_ELECTRONIC_ANNOTATION = "IEA";
     private final String C_ASPECT = "C";
+    private  Ontology ontology = null;
     /**
      * Köhler S, et al. The Human Phenotype Ontology in 2021. Nucleic Acids Res. 2021;49(D1):D1207-D1217.
      * doi: 10.1093/nar/gkaa1043. PMID: 33264411; PMCID: PMC7778952.
@@ -62,13 +63,17 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         }
 
         // Load everything
-        Ontology ontology = OntologyLoader.loadOntology(new File(hpopath));
+        this.ontology = OntologyLoader.loadOntology(new File(hpopath));
+        String hpoVersion = ontology.version().orElse("n/a");
+        System.out.println("[INFO] HPO version: " + hpoVersion);
+        // Parse Congenital terms from the text file and get the descendants of these HPO terms
+        termIdToCongenitalOnsetSet = parseHpoTermToHpoOnsetMap(ontology);
+        System.out.printf("[INFO] Congenital onset HPO terms: %d.\n", termIdToCongenitalOnsetSet.size());
         HpoDiseaseLoaderOptions options =
                 HpoDiseaseLoaderOptions.of(Set.of(DiseaseDatabase.OMIM), false, 5);
         HpoDiseaseLoader loader = HpoDiseaseLoaders.defaultLoader(ontology, options);
         HpoDiseases diseases = loader.load(Path.of(annotpath));
-
-
+        System.out.printf("[INFIO] Total disease models: %d\n", diseases.size());
         // Count current diseases with onset annotation in the phenotype.hpoa file and output
         int diseasesWithOnsetInformation = (int) countDiseasesWithOnset(diseases);
         System.out.println("[INFO] Current number of diseases with onset information: " + diseasesWithOnsetInformation);
@@ -78,19 +83,20 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         System.out.println("[INFO] Current number of diseases without onset information: " +
                 diseasesWithoutOnsetInformation);
 
-        // Parse Congenital terms from the text file and get the descendants of these HPO terms
-        termIdToCongenitalOnsetSet = parseHpoTermToHpoOnsetMap(ontology);
+
+        writeInferredOnsetTerms(termIdToCongenitalOnsetSet);
+        System.out.printf("[INFO] Inferred %d congenital onset terms.%n", termIdToCongenitalOnsetSet.size());
         // Update diseases that have any of these HPO terms with congenital age of onset
-        Set<HpoDisease> congenitalDiseaseSet = inferCongenitalDiseases(diseases, termIdToCongenitalOnsetSet);
-        System.out.println(String.format("[INFO] Inferred %d congenital onsets.", congenitalDiseaseSet.size()));
+        Map<HpoDisease, List<TermId>>  congenitalDiseaseMap = inferCongenitalDiseases(diseases, termIdToCongenitalOnsetSet);
+        System.out.printf("[INFO] Inferred %d congenital onset diseases.%n", congenitalDiseaseMap.size());
 
         // Infer diseases to be congenital based on terms and write to file
         System.out.println("[INFO] Writing inferred congenital diseases to: " + outfilePath);
-        writeCongenitalDiseasesToFile(congenitalDiseaseSet, outfilePath);
+        writeCongenitalDiseasesToFile(congenitalDiseaseMap, outfilePath);
 
         // Update and inform user of new total number of diseases with onset information
-        diseasesWithOnsetInformation = diseasesWithOnsetInformation + congenitalDiseaseSet.size();
-        diseasesWithoutOnsetInformation = diseasesWithoutOnsetInformation - congenitalDiseaseSet.size();
+        diseasesWithOnsetInformation = diseasesWithOnsetInformation + congenitalDiseaseMap.size();
+        diseasesWithoutOnsetInformation = diseasesWithoutOnsetInformation - congenitalDiseaseMap.size();
 
         System.out.println("[INFO] New number of diseases with onset information " + diseasesWithOnsetInformation);
         System.out.println("[INFO] New number of diseases without onset information " +
@@ -109,7 +115,8 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
 
         Set<TermId> termSet = new HashSet<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()))) {
-            String line = br.readLine();
+            br.readLine();
+            String line;
             while ((line = br.readLine()) != null) {
                 String[] fields = line.split(",");
                 if (fields.length != 2) {
@@ -121,33 +128,34 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
         }
-
-        // Get all agenesis terms
+        TermId  HFB = TermId.of("HP:0002692"); //         Hypoplastic facial bones
+        System.err.printf("[INFO] Congenital onset terms from file: %d\n", termSet.size());// Get all agenesis terms
         for (Term term : ontology.getTerms()) {
             Set<String> labels = new HashSet<>();
-            labels.add(term.getName().toLowerCase(Locale.ROOT));
-            for (var syn : term.getSynonyms()) {
-                labels.add(syn.getValue().toLowerCase(Locale.ROOT));
-            }
+            String termLabel = term.getName().toLowerCase(Locale.ROOT);
+            labels.add(termLabel);
+
             for (var lbl : labels) {
+                if (lbl.contains("aplasia/hypoplasia") || lbl.contains("hypoplasia/aplasia")) {
+                    continue; // Not guaranteed to be congenital, but might be picked up by
+                    // the following heuristic
+                    // e.g., Aplasia/Hypoplasia of facial bones HP:0034261
+                }
                 if (lbl.contains("agenesis") || lbl.contains("aplasia") || lbl.contains("supernumerary")
                         || lbl.contains("situs inversus") || lbl.contains("situs ambiguous")) {
                     termSet.add(term.id());
                 }
             }
         }
-
-
         // Get descendants of congenital terms, as these are also congenital
         Set<TermId> TermSetWithDescendants = new HashSet<>();
         for (TermId tid : termSet) {
             TermSetWithDescendants.add(tid);
             for (var hpoId: ontology.graph().getDescendants(tid)) {
+                /// leave out descendents of terms with Hypoplasia/Aplasia
                 TermSetWithDescendants.add(hpoId);
             }
         }
-
-
         return TermSetWithDescendants;
     }
 
@@ -185,15 +193,17 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
      * @param congenitalOnsetTermIds A set of TermIds representing known congenital terms.
      * @return A set of HpoDisease objects inferred to have congenital onset.
      */
-    private Set<HpoDisease> inferCongenitalDiseases(HpoDiseases diseases, Set<TermId> congenitalOnsetTermIds) {
-        Set<HpoDisease> congenitalDiseaseSet = new HashSet<>();
+    private  Map<HpoDisease, List<TermId>> inferCongenitalDiseases(HpoDiseases diseases, Set<TermId> congenitalOnsetTermIds) {
+        Map<HpoDisease, List<TermId>> congenitalDiseaseMap = new HashMap<>();
         for (HpoDisease disease : diseases) {
-            if (disease.diseaseOnset().isEmpty() && hasCongenitalAnnotation(disease, congenitalOnsetTermIds)) {
-                congenitalDiseaseSet.add(disease);
+            if (disease.diseaseOnset().isEmpty()) {
+                List<TermId> termIds = getCongenitalAnnotationList(disease, congenitalOnsetTermIds);
+                if (!termIds.isEmpty()) {
+                    congenitalDiseaseMap.put(disease, termIds);
+                }
             }
         }
-
-        return congenitalDiseaseSet;
+        return congenitalDiseaseMap;
     }
 
     /**
@@ -201,13 +211,14 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
      *
      * @param disease The HpoDisease to check.
      * @param congenitalOnsetTermIds A set of TermIds representing known congenital terms.
-     * @return True if the disease has a congenital annotation, false otherwise.
+     * @return Potentially empty list of congenital HPO term annotations for a disease.
      */
-    private boolean hasCongenitalAnnotation(HpoDisease disease, Set<TermId> congenitalOnsetTermIds) {
+    private List<TermId> getCongenitalAnnotationList(HpoDisease disease, Set<TermId> congenitalOnsetTermIds) {
         return disease.annotations().stream()
                 .filter(annotation -> annotation.frequency() > 0)
                 .map(HpoDiseaseAnnotation::id)
-                .anyMatch(congenitalOnsetTermIds::contains);
+                .filter(congenitalOnsetTermIds::contains)
+                .toList();
     }
 
     /**
@@ -216,21 +227,35 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
      * @param diseases The set of HpoDisease objects to write.
      * @param outFilePath The path to the output file.
      */
-    private void writeCongenitalDiseasesToFile(Set<HpoDisease> diseases, String outFilePath) {
+    private void writeCongenitalDiseasesToFile(Map<HpoDisease, List<TermId>> diseases, String outFilePath) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outfilePath))) {
-            diseases.stream()
-                    .map(this::formatDiseaseData)
-                    .forEachOrdered(line -> {
-                        try {
-                            writer.write(line + "\n");
-                        } catch (IOException e) {
-                            LOGGER.error(e.getMessage());
-                        }
-                    });
+            for (var e: diseases.entrySet()) {
+                HpoDisease disease = e.getKey();
+                List<TermId> termIds = e.getValue();
+                String formated= formatDiseaseData(disease,termIds );
+                writer.write(formated + "\n");
+
+            }
         } catch (IOException e) {
             LOGGER.error(e.getMessage());
         }
     }
+
+
+
+    private String formatTerms(List<TermId> termIds) {
+        List<String> terms = new ArrayList<>();
+        for (TermId termId : termIds) {
+            Optional<Term> term = this.ontology.termForTermId(termId);
+            if (term.isPresent()) {
+                terms.add(String.format("%s[%s]", term.get().getName(), term.get().id().getValue()));
+            } else {
+                throw new PhenolRuntimeException("Could not find term with id " + termId);
+            }
+        }
+        return String.join(";", terms);
+    }
+
 
     /**
      * Formats the data of an HpoDisease object into a tab-separated line.
@@ -238,7 +263,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
      * @param disease The HpoDisease object.
      * @return A tab-separated string representing the formatted disease data.
      */
-    private String formatDiseaseData(HpoDisease disease) {
+    private String formatDiseaseData(HpoDisease disease, List<TermId> termIds ) {
         List<String> fields = Arrays.asList(
                 disease.id().getValue(),
                 disease.diseaseName(),
@@ -246,7 +271,7 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
                 CONGENITAL_ONSET,
                 HPO_PMID,
                 INFERRED_FROM_ELECTRONIC_ANNOTATION,
-                EMPTY_STRING,
+                formatTerms(termIds),
                 EMPTY_STRING,
                 EMPTY_STRING,
                 EMPTY_STRING,
@@ -256,6 +281,20 @@ public class OnsetCommand extends HPOCommand implements Callable<Integer> {
         return String.join("\t", fields);
     }
 
+    private void writeInferredOnsetTerms(Set<TermId> congenitalTerms) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("inferredOnsetterms.txt"))){
+            for (TermId tid : congenitalTerms) {
+                Optional<Term> term = this.ontology.termForTermId(tid);
+                if (term.isPresent()) {
+                    bw.write(term.get().getName()+ "\t" + tid.getValue()  + "\n");
+                } else {
+                    throw new PhenolRuntimeException("Could not find term with id " + tid);
+                }
 
+            }
+        } catch (IOException e) {
+            LOGGER.error(e.getMessage());
+        }
+    }
 
 }

@@ -41,7 +41,7 @@ public class SimulatedHpoDiseaseGenerator {
 
     /**
      * Generates a simulated Phenopacket based on the specified OMIM ID and number of HPO terms.
-     *
+     * <p>
      * This method performs the following steps:
      * 1. Extracts the OMIM ID (e.g., OMIM:123456) from the provided "diseases" list. If the OMIM ID is not present,
      *      an error is thrown.
@@ -68,13 +68,13 @@ public class SimulatedHpoDiseaseGenerator {
                 // choose a random onset from the range
                 int start = onsetRange.start().days();
                 int end = onsetRange.end().days();
-                onset = random.nextInt(start, end + 1);
+                onset = (int)(start+end)/2;
             } else {
                 LOGGER.debug("No onset information available for disease {}", omimId.getValue());
             }
 
             // Add some age to the phenopacket by adding a few years to the onset
-            if (onset != 0) {
+            if (onset > 0) {
                 age = onset + random.nextInt(0, 10 * 365); // add up to 10 years
             }
 

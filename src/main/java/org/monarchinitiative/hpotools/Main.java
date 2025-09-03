@@ -18,13 +18,14 @@ public class Main implements Callable<Integer> {
             }
             LOGGER.trace("Starting HPO tools");
             CommandLine cline = new CommandLine(new Main())
+                    .addSubcommand("dist", new HpoDistCommand())
                     .addSubcommand("download", new DownloadCommand())
                     .addSubcommand("encoding", new EncodingCommand())
+                    .addSubcommand("maxo", new MaxoCommand())
                     .addSubcommand("mondo", new MondoCommand())
                     .addSubcommand("onset", new OnsetCommand())
-                    .addSubcommand("simhpo", new SimHpoCommand())
+                    .addSubcommand("sim", new SimHpoCommand())
                     .addSubcommand("stats", new StatsCommand())
-                    .addSubcommand("translate", new DiseaseTranslateCommand())
                     .addSubcommand("tsv", new Hpo2TsvCommand())
                     .addSubcommand("word", new WordCommand())
                    ;

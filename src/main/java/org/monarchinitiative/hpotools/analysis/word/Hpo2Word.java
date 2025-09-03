@@ -99,7 +99,7 @@ public class Hpo2Word {
 
     private void writeTablesFromTerm(XWPFDocument document, Term startTerm) {
 
-        Iterable<TermId> children = hpoOntology.graph().getChildren(startTerm.id(), false);
+        Iterable<TermId> children = hpoOntology.graph().extendWithChildren(startTerm.id(), false);
         List<TermId> childTermidList = new ArrayList<>();
         for (TermId tid : children) {
             childTermidList.add(tid);
@@ -183,7 +183,7 @@ public class Hpo2Word {
 
 
     private List<Term> getChildren(TermId tid) {
-        Iterable<TermId> iter = hpoOntology.graph().getChildren(tid, false);
+        Iterable<TermId> iter = hpoOntology.graph().extendWithChildren(tid, false);
         List<Term> termlist = new ArrayList<>();
         for (TermId childId : iter) {
             Optional<Term> opt = hpoOntology.termForTermId(childId);
@@ -266,7 +266,7 @@ public class Hpo2Word {
                 run4.setFontSize(TABLE_CELL_FONT_SIZE);
                 run4.setText(synonyms);
                 previouslyseen.add(termId);
-                Iterable<TermId> children = hpoOntology.graph().getChildren(hterm.id(), false);
+                Iterable<TermId> children = hpoOntology.graph().extendWithChildren(hterm.id(), false);
                 for (TermId t:children) {
                     stack.push(new Pair<>(t,level+1));
                 }

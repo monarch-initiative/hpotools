@@ -24,7 +24,7 @@ public class ProportionalSamplerWithReplacement<E> extends AbstractProportionalS
     }
 
     public List<E> sample(int n) {
-        List<E> selectedElements = new ArrayList<E>();
+        List<E> selectedElements = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             selectedElements.add(sample());
         }

@@ -4,7 +4,7 @@ import java.util.*;
 
 public interface IProportionalSampler<E> {
 
-    public E sample();
+    E sample();
 
-    public List<E> sample(int n);
+    List<E> sample(int n);
 }
