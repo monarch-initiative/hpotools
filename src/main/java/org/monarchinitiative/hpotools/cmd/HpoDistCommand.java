@@ -13,7 +13,10 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 
-
+/**
+ * Test the distribution of terms in the various top-level HPO categories. Are the categories with
+ * significantly more terms than we would expect by chance?
+ */
 @CommandLine.Command(name = "dist",
         mixinStandardHelpOptions = true,
         description = "Output subontology as word file (experimental)")
@@ -33,12 +36,6 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
         double probability = ExactMultinomial.exactMultinomialTest(orderedObservedCounts, expectedProportions);
         System.out.println("Exact multinomial p value " + probability);
         outputProprotions(topLevelHpoTermCounts, orderedObservedCounts, expectedProportions, topLevelHpoLabels);
-        /*
-        ChiSquareTest chiSquareTest = new ChiSquareTest();
-        double pValue = chiSquareTest.chiSquareTest(expected, observedCounts);
-        double chiSquareStatistic = chiSquareTest.chiSquare(expected, observedCounts);
-    */
-
         return 0;
     }
 
@@ -74,7 +71,7 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
      * Create an array with observed counts and arrange it in the same order
      * @param topLevelHpoTermCounts List with top-level HPO terms in order
      * @param observedHpoCounts map with counts observed in an experiment
-     * @return
+     * @return A list of observed counts
      */
     private int[] getOrderedObservedCounts(List<Map.Entry<TermId, Integer>> topLevelHpoTermCounts, Map<TermId, Integer> observedHpoCounts) {
         int[] observed_counts = new int[topLevelHpoTermCounts.size()];
@@ -108,7 +105,7 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
 
     /**
      * Get a list of the top level terms, ordered by total number of children
-     * @param hpo
+     * @param hpo the Ontology
      * @return A list of Map Entries, with key the TermId and value the count
      */
     private List<Map.Entry<TermId, Integer>> getTopLevelTermList(Ontology hpo) {
@@ -154,21 +151,21 @@ public class HpoDistCommand extends HPOCommand implements Callable<Integer> {
         // Abnormality of the musculoskeletal system
         hpoCounts.put(TermId.of("HP:0033127"), 38);
         // Abnormality of the nervous system
-        hpoCounts.put(TermId.of("HP:0000707"), 37);
+        hpoCounts.put(TermId.of("HP:0000707"), 40);
         //Abnormality of limbs
         hpoCounts.put(TermId.of("HP:0040064"), 19);
         //Abnormality of the cardiovascular system
         hpoCounts.put(TermId.of("HP:0001626"), 11);
         //Neoplasm
-        hpoCounts.put(TermId.of("HP:0002664"), 13);
+        hpoCounts.put(TermId.of("HP:0002664"), 16);
         // Abnormality of head or neck
         hpoCounts.put(TermId.of("HP:0000152"), 8);
         // Abnormality of the eye
         hpoCounts.put(TermId.of("HP:0000478"), 6);
         // Abnormality of the integument
-        hpoCounts.put(TermId.of("HP:0001574"), 8);
+        hpoCounts.put(TermId.of("HP:0001574"), 10);
         // Growth abnormality
-        hpoCounts.put(TermId.of("HP:0001507"), 6);
+        hpoCounts.put(TermId.of("HP:0001507"), 5);
         // Abnormality of blood and blood-forming tissues
         hpoCounts.put(TermId.of("HP:0001871"), 6);
         // Abnormality of the immune system

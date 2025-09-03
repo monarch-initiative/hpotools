@@ -13,6 +13,9 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 
 
+/**
+ * Create TSV file with a target term and all of its descendants.
+ */
 @CommandLine.Command(name = "word",
         mixinStandardHelpOptions = true,
         description = "Output subontology as word file (experimental)")
@@ -35,14 +38,10 @@ public class Hpo2TsvCommand extends HPOCommand implements Callable<Integer> {
         TermId hpoId = TermId.of(startTermId);
         Optional<Term> opt = hpOntology.termForTermId(hpoId);
         if (opt.isEmpty()) {
-            System.err.printf("[ERROR] No HPO term found for %s.\n", startTermId);
-        }
-        if (opt.isEmpty()) {
-            LOGGER.error("[ERROR] No term found for {}.", startTermId);
+            LOGGER.error("[ERROR] No HPO term found for {}.", startTermId);
             return 1;
         }
         Term targetTerm = opt.get();
-
         String name = targetTerm.getName().replaceAll(" ", "_");
         String id = targetTerm.id().getValue().replaceAll(":", "_");
         String outfilename = String.format("%s_%s.tsv", name, id);

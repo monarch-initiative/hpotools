@@ -68,13 +68,13 @@ public class SimulatedHpoDiseaseGenerator {
                 // choose a random onset from the range
                 int start = onsetRange.start().days();
                 int end = onsetRange.end().days();
-                onset = random.nextInt(start, end + 1);
+                onset = (int)(start+end)/2;
             } else {
                 LOGGER.debug("No onset information available for disease {}", omimId.getValue());
             }
 
             // Add some age to the phenopacket by adding a few years to the onset
-            if (onset != 0) {
+            if (onset > 0) {
                 age = onset + random.nextInt(0, 10 * 365); // add up to 10 years
             }
 

@@ -12,10 +12,9 @@ import java.util.concurrent.Callable;
 
 
 /**
- * Implementation of download in HpoWorkbench. The command is intended to download
- * both the OBO file and the association file. For HPO, this is {@code hp.obo} and
- * {@code phenotype_annotation.tab}.
- * Code modified from Download command in Jannovar.
+ * Implementation of download in HpoTools. The command is intended to download
+ * both the JSON file and the association file. For HPO, this is {@code hp.json} and
+ * {@code phenotype.hpoa}.
  * @author <a href="mailto:manuel.holtgrewe@charite.de">Manuel Holtgrewe</a>
  * @author <a href="mailto:peter.robinson@jax.org">Peter Robinson</a>
  * @version 0.0.1 (May 10, 2017)
