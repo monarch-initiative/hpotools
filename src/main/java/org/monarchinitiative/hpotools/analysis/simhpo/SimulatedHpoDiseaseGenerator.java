@@ -5,7 +5,9 @@ import org.monarchinitiative.phenol.annotations.base.temporal.TemporalInterval;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDisease;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseaseAnnotation;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
+import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
+import org.monarchinitiative.phenol.ontology.data.Term;
 import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.phenopackets.phenopackettools.builder.PhenopacketBuilder;
 import org.phenopackets.schema.v2.Phenopacket;
@@ -15,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SimulatedHpoDiseaseGenerator {
     private final static Logger LOGGER = LoggerFactory.getLogger(SimulatedHpoDiseaseGenerator.class);
@@ -28,15 +31,24 @@ public class SimulatedHpoDiseaseGenerator {
 
     private static int idCounter = 0;
 
+    private final List<TermId> allPhenotypetermIds;
+
     public SimulatedHpoDiseaseGenerator(HpoDiseases hpoDiseases, Ontology hpoOntology) {
         this.hpoDiseases = hpoDiseases;
         this.hpoOntology = hpoOntology;
         this.random = new Random(DEFAULT_SEED);
+        allPhenotypetermIds = new ArrayList<>();
+        TermId phenotypicAbn = TermId.of("HP:0000118");
+        this.hpoOntology.graph().getDescendants(phenotypicAbn).forEach(t -> allPhenotypetermIds.add(t));
     }
 
 
+    public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int terms_to_simulate, int nNoiseTerms, int nImpreciseTerms) {
+        return generateSimulatedPhenopacket(omimId, terms_to_simulate, nNoiseTerms, nImpreciseTerms, "SIM-" + SimulatedHpoDiseaseGenerator.idCounter++);
+    }
+
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId) {
-        return generateSimulatedPhenopacket(omimId, DEFAULT_NUMBER_OF_TERMS, "SIM-" + SimulatedHpoDiseaseGenerator.idCounter++);
+        return generateSimulatedPhenopacket(omimId, DEFAULT_NUMBER_OF_TERMS, 0,0, "SIM-" + SimulatedHpoDiseaseGenerator.idCounter++);
     }
 
     /**
@@ -53,7 +65,7 @@ public class SimulatedHpoDiseaseGenerator {
      * @param nTerms The number of HPO terms to select randomly from the disease annotations.
      * @return An Optional containing the generated Phenopacket if successful, otherwise an empty Optional.
      */
-    public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int nTerms, String identifier) {
+    public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId, int nTerms, int nNoiseTerms, int nImpreciseTerms, String identifier) {
         long age = 0;
         int sex = 0;
         long onset = 0;
@@ -109,6 +121,14 @@ public class SimulatedHpoDiseaseGenerator {
             LOGGER.error("Could not find OMIM identifier {}", omimId.getValue());
             return Optional.empty();
         }
+        List<TermId> hpoTermIds = annotations.stream().map(HpoDiseaseAnnotation::id).toList();
+        if (nImpreciseTerms > 0) {
+            hpoTermIds = addImprecision(hpoTermIds, nImpreciseTerms);
+        }
+        if (nNoiseTerms > 0) {
+            hpoTermIds = addNoise(hpoTermIds, nNoiseTerms);
+        }
+
         long currentSeconds = System.currentTimeMillis() / 1000;
         Individual subject = Individual.newBuilder()
                 .setId(identifier)
@@ -139,24 +159,21 @@ public class SimulatedHpoDiseaseGenerator {
                     .build();
         }
         List<PhenotypicFeature> phenotypicFeatures = new ArrayList<>();
-        for (HpoDiseaseAnnotation annotation : annotations) {
-            TermId hpoTerm = annotation.id();
+        for (TermId tid : hpoTermIds) {
+            Optional<Term> opt = this.hpoOntology.termForTermId(tid);
+            if (opt.isEmpty() ) {
+                throw new PhenolRuntimeException("Could not find term " + tid.getValue());
+            }
+            Term hpoTerm = opt.get();
             OntologyClass type = OntologyClass.newBuilder()
-                    .setId(hpoTerm.getValue())
-                    .setLabel(hpoOntology.getTermLabel(hpoTerm).orElse(""))
+                    .setId(hpoTerm.id().getValue())
+                    .setLabel(hpoTerm.getName())
                     .build();
 
-            List<OntologyClass> modifiers = annotation.modifiers()
-                    .stream()
-                    .map(modifier -> OntologyClass.newBuilder()
-                        .setId(modifier.getValue())
-                        .setLabel(hpoOntology.getTermLabel(modifier).orElse(""))
-                        .build()
-                    ).toList();
+
             // TODO: could still add simulated onset and resolution in the future, is present in HpoDiseaseAnnotation
             phenotypicFeatures.add(PhenotypicFeature.newBuilder()
                     .setType(type)
-                    .addAllModifiers(modifiers)
                     .build());
         }
         PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
@@ -165,6 +182,29 @@ public class SimulatedHpoDiseaseGenerator {
                 .addPhenotypicFeatures(phenotypicFeatures);
         Phenopacket phenopacket = builder.build();
         return Optional.of(phenopacket); // return the phenopacket unless there is an error
+    }
+
+
+    List<TermId> addImprecision(List<TermId> tidList , int nImpreciseTerms) {
+        int c = 0;
+        while (c < nImpreciseTerms && c < tidList.size()) {
+            TermId termId = tidList.get(c);
+            Set<TermId> parents = this.hpoOntology.graph().getParents(termId);
+            TermId first = parents.iterator().next();
+            tidList.set(c, first);
+        }
+        return tidList;
+    }
+
+    List<TermId> addNoise(List<TermId> tidList , int nNoiseTerms) {
+        int N = this.allPhenotypetermIds.size();
+        for (int i = 0; i < nNoiseTerms; i++) {
+            int i1 = this.random.nextInt(N);
+            TermId randomTermId = this.allPhenotypetermIds.get(i1);
+            int i2 = this.random.nextInt(tidList.size());
+            tidList.set(i2, randomTermId);
+        }
+        return tidList;
     }
 
     private MetaData buildMetaData(long currentSeconds) {
