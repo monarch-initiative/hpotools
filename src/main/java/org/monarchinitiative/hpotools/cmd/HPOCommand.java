@@ -19,13 +19,12 @@ public abstract class HPOCommand {
 
     @CommandLine.Option(names={"-d","--download"},description = "directory to download HPO data")
     protected String downloadDirectory="data";
-    @CommandLine.Option(names={"-a", "--annot"},description = "path to phenol.hpoa")
+    @CommandLine.Option(names={"-a", "--annot"},description = "path to phenotype.hpoa")
     protected String annotpath="data/phenotype.hpoa";
     @CommandLine.Option(names={"--hpo"}, description = "path to hp.json")
     protected String hpopath ="data/hp.json";
 
     protected Map<String,String> defaults=new HashMap<>();
-
 
     public HPOCommand setDefaultValue(String key,String value) {
         defaults.put(key,value);
@@ -52,5 +51,4 @@ public abstract class HPOCommand {
         }
         return f;
     }
-
 }

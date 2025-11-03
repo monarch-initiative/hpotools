@@ -1,6 +1,7 @@
 package org.monarchinitiative.hpotools.cmd;
 
 
+import org.monarchinitiative.hpotools.analysis.simhpo.HpoaPpktGenerator;
 import org.monarchinitiative.hpotools.analysis.simhpo.SimulatedHpoDiseaseGenerator;
 import org.monarchinitiative.phenol.annotations.formats.hpo.HpoDiseases;
 import org.monarchinitiative.phenol.annotations.io.hpo.DiseaseDatabase;
@@ -11,13 +12,14 @@ import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.io.OntologyLoader;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.monarchinitiative.phenol.ontology.data.TermId;
+import org.p2gx.boqa.core.diseases.DiseaseDataPhenolIngest;
 import org.phenopackets.schema.v2.Phenopacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-
 import com.google.protobuf.util.JsonFormat;
 import org.phenopackets.schema.v2.Phenopacket;
+import org.p2gx.boqa.core.DiseaseData;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,8 +40,15 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
     private int nCases = 100;
 
     /** default simulate 5 HPO terms */
-    @CommandLine.Option(names={"-n","--nterms"}, description = "number of HPO terms to be simulated", required = false)
+    @CommandLine.Option(names={"-n","--nterms"}, description = "Number of HPO terms to be simulated", required = false)
     private int nterms = 5;
+
+    /** Create phenopackets from HPOA exactly according to the disease associated terms,
+     * without randomly adding, omitting or replacing terms. */
+    @CommandLine.Option(names={"-u","--unaltered"}, description = "Create phenopackets from HPOA " +
+            "exactly according to the disease associated terms, " +
+            "without randomly adding, omitting or replacing terms.")
+    private boolean unaltered = false;
 
     /** output directory for simulated phenopackets */
     @CommandLine.Option(names={"--outdir"}, description = "Output directory", required = false)
@@ -53,7 +62,7 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
         File hpoFile = new File(hpopath);
         LOGGER.info("HPO file: {}", hpoFile.getAbsolutePath());
         if (annotpath==null) {
-            throw new PhenolRuntimeException("Need to specify annotpath path");
+            throw new PhenolRuntimeException("Need to specify path to phenotype.hpoa");
         }
         File annotFile = new File(annotpath);
         if (!annotFile.exists()) {
@@ -67,6 +76,7 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
         HpoDiseaseLoader loader = HpoDiseaseLoaders.defaultLoader(ontology, options);
         Path annotpath = annotFile.toPath();
         HpoDiseases diseases = loader.load(annotpath);
+        //System.out.println(diseases.size());
         // make directory if needed
         if (outdir.exists()) {
             System.out.println("[WARN] Output directory already exists: " + outdir.getAbsolutePath());
@@ -79,37 +89,65 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
         }
         SimulatedHpoDiseaseGenerator generator = new SimulatedHpoDiseaseGenerator(diseases, ontology);
         List<TermId> diseaseIds = new ArrayList<>(diseases.diseaseIds());
-        int count = 0;
-        while (count < nCases) {
-            Random rand = new Random();
-            int idx = rand.nextInt(diseaseIds.size());
-            TermId randomOmimId = diseaseIds.get(idx);
-            Optional<Phenopacket> opt = generator.generateSimulatedPhenopacket(randomOmimId);
-            // When we get here, we want to output the simulated phenopackets to file
-            // now, the generator is just a skeleton and it always returns Optional.empty()!!!
-            if (opt.isPresent()) {
-                Phenopacket ppkt = opt.get();
-                String jsonString = JsonFormat.printer().print(ppkt);
-                System.out.println(jsonString);
-                String ppkt_id = ppkt.getId();
-                String cleaned = ppkt_id.replaceAll("[^\\x00-\\x7F]", "_");
-                String outname = String.format("%s.json", cleaned);
-                try {
-                    Path filePath = Paths.get(String.valueOf(outdir), outname);
-                    Files.write(filePath, jsonString.getBytes());
-                    System.out.println("File written successfully");
-                } catch (IOException e) {
-                    System.err.println("Error writing file: " + e.getMessage());
+        if (unaltered) {
+            System.out.println("Creating phenopackets from HPOA exactly according to the disease associated terms, " +
+                    "without randomly adding, omitting or replacing terms.");
+            Path ontopath = Paths.get(hpoFile.getAbsolutePath());
+            HpoaPpktGenerator hpoaPpktGenerator = new HpoaPpktGenerator(annotpath, ontopath);
+            //System.out.println("$$$" + hpoaPpktGenerator.getNumOfDiseases());
+            for (String diseaseId : hpoaPpktGenerator.getDiseaseIds()) {
+                //System.out.println(diseaseId);
+                Optional<Phenopacket> opt = hpoaPpktGenerator.generatePhenopacketForHpoaDisease(diseaseId, diseaseId + "_hpoa_unaltered_ppkt");
+                if (opt.isPresent()) {
+                    Phenopacket ppkt = opt.get();
+                    String jsonString = JsonFormat.printer().print(ppkt);
+                    //System.out.println(jsonString);
+                    String ppkt_id = ppkt.getId();
+                    String cleaned = ppkt_id.replaceAll("[^\\x00-\\x7F]", "_");
+                    String outname = String.format("%s.json", cleaned);
+                    try {
+                        Path filePath = Paths.get(String.valueOf(outdir), outname);
+                        Files.write(filePath, jsonString.getBytes());
+                        //System.out.println("Phenopacket file written successfully");
+                    } catch (IOException e) {
+                        System.err.println("Error writing file: " + e.getMessage());
+                    }
+                } else {
+                    System.err.println("[ERROR] Could not generate simulated phenopacket");
+                    System.exit(1);
                 }
-            } else {
-                System.err.println("[ERROR] Could not generate simulated phenopacket");
-                System.exit(1);
             }
-            count++;
+        } else {
+            int count = 0;
+            while (count < nCases) {
+                Random rand = new Random();
+                int idx = rand.nextInt(diseaseIds.size());
+                TermId randomOmimId = diseaseIds.get(idx);
+                System.out.println(randomOmimId);
+                Optional<Phenopacket> opt = generator.generateSimulatedPhenopacket(randomOmimId);
+                // When we get here, we want to output the simulated phenopackets to file
+                // now, the generator is just a skeleton and it always returns Optional.empty()!!!
+                if (opt.isPresent()) {
+                    Phenopacket ppkt = opt.get();
+                    String jsonString = JsonFormat.printer().print(ppkt);
+                    //System.out.println(jsonString);
+                    String ppkt_id = ppkt.getId();
+                    String cleaned = ppkt_id.replaceAll("[^\\x00-\\x7F]", "_");
+                    String outname = String.format("%s.json", cleaned);
+                    try {
+                        Path filePath = Paths.get(String.valueOf(outdir), outname);
+                        Files.write(filePath, jsonString.getBytes());
+                        System.out.println("File written successfully");
+                    } catch (IOException e) {
+                        System.err.println("Error writing file: " + e.getMessage());
+                    }
+                } else {
+                    System.err.println("[ERROR] Could not generate simulated phenopacket");
+                    System.exit(1);
+                }
+                count++;
+            }
         }
-
-
-
         return 0;
     }
 }

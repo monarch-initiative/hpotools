@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class SimulatedHpoDiseaseGenerator {
     private final static Logger LOGGER = LoggerFactory.getLogger(SimulatedHpoDiseaseGenerator.class);
     private final static int DEFAULT_NUMBER_OF_TERMS = 5;
-    private final static int DEFAULT_SEED = 42;
+    private final static int DEFAULT_SEED = 43;
 
     private final HpoDiseases hpoDiseases;
 
@@ -49,6 +49,92 @@ public class SimulatedHpoDiseaseGenerator {
 
     public Optional<Phenopacket > generateSimulatedPhenopacket(TermId omimId) {
         return generateSimulatedPhenopacket(omimId, DEFAULT_NUMBER_OF_TERMS, 0,0, "SIM-" + SimulatedHpoDiseaseGenerator.idCounter++);
+    }
+
+    /**
+     * Generates a Phenopacket for a disease from HPOA.
+     * <p>
+     * This method performs the following steps:
+     * 1. Extracts the OMIM ID (e.g., OMIM:123456) from the provided "diseases" list. If the OMIM ID is not present,
+     *      an error is thrown.
+     * 2. Selects a specified number of HPO terms at random from the annotations of the disease.
+     * 3. Chooses the annotations according to their frequencies by creating a normalized probability table.
+     * 4. Uses PhenopacketTools Builder classes to construct the Phenopacket. For an example, see the phenopacket2prompt.
+     *
+     * @param diseaseId The OMIM ID representing the disease.
+     * @param identifier The number of HPO terms to select randomly from the disease annotations.
+     * @return An Optional containing the generated Phenopacket if successful, otherwise an empty Optional.
+     */
+    public Optional<Phenopacket > generatePhenopacketForHpoaDisease(TermId diseaseId, String identifier) {
+        long age = 0;
+        int sex = 0;
+        long onset = 0;
+        List<HpoDiseaseAnnotation> annotations;
+        if (hpoDiseases.diseaseById().containsKey(diseaseId)) {
+
+            // Get Phenol disease object
+            HpoDisease disease = hpoDiseases.diseaseById().get(diseaseId);
+
+            // Add annotations to the phenopacket
+            annotations = (List<HpoDiseaseAnnotation>) disease.annotations();
+        } else {
+            LOGGER.error("Could not find OMIM identifier {}", diseaseId.getValue());
+            return Optional.empty();
+        }
+        List<TermId> hpoTermIds = annotations.stream().map(HpoDiseaseAnnotation::id).toList();
+
+        long currentSeconds = System.currentTimeMillis() / 1000;
+        Individual subject = Individual.newBuilder()
+                .setId(identifier)
+                .setDateOfBirth(Timestamp.newBuilder().setSeconds(currentSeconds - (age / 24 / 60 / 60)))
+                .setSex(Sex.forNumber(sex))
+                .setTaxonomy(OntologyClass.newBuilder()
+                        .setId("NCBITaxon:9606")
+                        .setLabel("Homo Sapiens Sapiens")
+                        .build())
+                .build();
+        Disease disease;
+        if (onset > 0) {
+            disease = Disease.newBuilder()
+                    .setTerm(OntologyClass.newBuilder()
+                            .setId(diseaseId.getValue())
+                            .build())
+                    .setOnset(TimeElement.newBuilder()
+                            .setTimestamp(Timestamp.newBuilder()
+                                    .setSeconds(currentSeconds - onset / 24 / 60 / 60)  // days to seconds
+                                    .build())
+                            .build())
+                    .build();
+        } else {
+            disease = Disease.newBuilder()
+                    .setTerm(OntologyClass.newBuilder()
+                            .setId(diseaseId.getValue())
+                            .build())
+                    .build();
+        }
+        List<PhenotypicFeature> phenotypicFeatures = new ArrayList<>();
+        for (TermId tid : hpoTermIds) {
+            Optional<Term> opt = this.hpoOntology.termForTermId(tid);
+            if (opt.isEmpty() ) {
+                throw new PhenolRuntimeException("Could not find term " + tid.getValue());
+            }
+            Term hpoTerm = opt.get();
+            OntologyClass type = OntologyClass.newBuilder()
+                    .setId(hpoTerm.id().getValue())
+                    .setLabel(hpoTerm.getName())
+                    .build();
+
+            // TODO: could still add simulated onset and resolution in the future, is present in HpoDiseaseAnnotation
+            phenotypicFeatures.add(PhenotypicFeature.newBuilder()
+                    .setType(type)
+                    .build());
+        }
+        PhenopacketBuilder builder = PhenopacketBuilder.create(identifier, buildMetaData(currentSeconds))
+                .individual(subject) // TODO: @pnrobinson for all other fields it's add... for individual it isn't?
+                .addDisease(disease)
+                .addPhenotypicFeatures(phenotypicFeatures);
+        Phenopacket phenopacket = builder.build();
+        return Optional.of(phenopacket); // return the phenopacket unless there is an error
     }
 
     /**

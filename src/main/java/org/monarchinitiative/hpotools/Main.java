@@ -7,10 +7,9 @@ import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
 @CommandLine.Command(name = "lcp", mixinStandardHelpOptions = true, version = "lcp 0.0.1",
-        description = "long covid phenottype")
+        description = "long covid phenotype")
 public class Main implements Callable<Integer> {
         private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
-
         public static void main(String[] args) {
             if (args.length == 0) {
                 // if the user doesn't pass any command or option, add -h to show help
