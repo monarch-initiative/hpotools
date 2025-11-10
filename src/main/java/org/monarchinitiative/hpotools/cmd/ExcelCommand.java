@@ -91,11 +91,12 @@ public class ExcelCommand extends HPOCommand implements Callable<Integer> {
                  Workbook wb = new Workbook(os, "TermMaster", "1.0")) {
                 Worksheet ws = wb.newWorksheet("Terms");
                 System.out.println("Start!!!!");
-                Iterable<TermId> childrenIter = hpOntology.graph().extendWithChildren(targetTerm.id(), false);
+                Set<TermId> offspirngs = findOffsprings(targetTerm.id(), hpOntology);
                 List<TermId> termList = new ArrayList<>();
-                childrenIter.forEach(termList::add);
-
                 termList.addFirst(targetTerm.id());
+                termList.addAll(offspirngs);
+
+
                 System.out.println("Iterating");
                 System.out.println(termList.size());
                 for (int i = 0; i < termList.size(); i++) {
@@ -110,6 +111,20 @@ public class ExcelCommand extends HPOCommand implements Callable<Integer> {
             return 1;
         }
         return 0;
+    }
+
+    public Set<TermId> findOffsprings(TermId termId, Ontology hpOntology) {
+        Set<TermId> offsprings = new HashSet<>();
+
+        Set<TermId> children = hpOntology.graph().getChildren(termId);
+
+        for (TermId child : children) {
+            offsprings.add(child);
+            // Recursively get all descendants of this child
+            offsprings.addAll(findOffsprings(child, hpOntology));
+        }
+
+        return offsprings;
     }
 
     public void write_row(int row_idx, TermId term_id, Ontology ontology, Worksheet ws) {
