@@ -29,3 +29,9 @@ target/
 candidates.*
 /candidates/
 .DS_Store
+/CpCandidateDiseasesAndGenes.txt
+/inferredOnsetterms.txt
+/distribution-hpo.txt
+*.docx
+/disease_mappings.tsv
+/predictedCongenital.hpoa
