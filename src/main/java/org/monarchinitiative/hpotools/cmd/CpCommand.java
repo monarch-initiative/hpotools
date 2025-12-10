@@ -71,38 +71,56 @@ public class CpCommand  extends HPOCommand implements Callable<Integer> {
                         HpoDisease::diseaseName
                 ));
         Set<TermId> cpDiseases = getHpoDiseasesForTerm(diseases, cerebralPalsy, "Cerebral palsy");
-        Set<TermId> athetoidCpDiseases = getHpoDiseasesForTerm(diseases, athethoidCerebralPalsy, "Athetoid cerebral palsy");
+        int n_cp = cpDiseases.size();
         Set<TermId> earlyOnsetHyperreflexia = getEarlyOnsetHpoDiseasesForTermSet(diseases, hyperreflexia, "Hyperreflexia", ontology);
+        int n_hyperreflexia = earlyOnsetHyperreflexia.size();
         Set<TermId> earlyOnsetSpasticity = getEarlyOnsetHpoDiseasesForTermSet(diseases, spasticity, "Spasticity", ontology);
+        int n_spasticity = earlyOnsetSpasticity.size();
         Set<TermId> earlyOnsetHypertonia = getEarlyOnsetHpoDiseasesForTermSet(diseases, hypertonia, "Hypertonia", ontology);
+        int n_hypertonia = earlyOnsetHypertonia.size();
         Set<TermId> earlyOnsetDystonia = getEarlyOnsetHpoDiseasesForTermSet(diseases, dystonia, "Dystonia", ontology);
+        int n_dystonia = earlyOnsetDystonia.size();
         Set<TermId> earlyOnsetAtaxia = getEarlyOnsetHpoDiseasesForTermSet(diseases, ataxia, "Ataxia", ontology);
+        int n_ataxia = earlyOnsetAtaxia.size();
         Set<TermId> neurodevDiseases = getEarlyOnsetHpoDiseasesForTermSet(diseases, neurodevDelay, "GDD", ontology);
+        int n_neurodev = neurodevDiseases.size();
         Set<TermId> allEarlyOnsetCandidateDiseases = new HashSet<>();
-       // allEarlyOnsetCandidateDiseases.addAll(cpDiseases);
-       // allEarlyOnsetCandidateDiseases.addAll(athetoidCpDiseases);
         allEarlyOnsetCandidateDiseases.addAll(earlyOnsetHyperreflexia);
         allEarlyOnsetCandidateDiseases.addAll(earlyOnsetSpasticity);
         allEarlyOnsetCandidateDiseases.addAll(earlyOnsetHypertonia);
         allEarlyOnsetCandidateDiseases.addAll(earlyOnsetDystonia);
         allEarlyOnsetCandidateDiseases.addAll(earlyOnsetAtaxia);
         System.out.printf("Got a total of %d candidate diseases\n", allEarlyOnsetCandidateDiseases.size());
-        // intersect with Neurodev
         System.out.printf("All neurodev diseases: %d\n", neurodevDiseases.size());
-        neurodevDiseases.retainAll(allEarlyOnsetCandidateDiseases);
+        neurodevDiseases.addAll(allEarlyOnsetCandidateDiseases);
         System.out.printf("All neurodev diseases intersect with candidates: %d\n", neurodevDiseases.size());
-        // Add back in the diseases explictly annotated to Cerebral palsy
         System.out.printf("All diseases with annotations to Cerebral palsy with candidates: %d\n", cpDiseases.size());
         neurodevDiseases.addAll(cpDiseases);
         System.out.printf("All neurodev diseases and CP diseases: %d\n", neurodevDiseases.size());
+        String breakdown = String.format("""
+                 We defined a null model based on a set of potentially CP-associated genes, which we defined as all genes associated with diseases with infantile or childhood onset that are annotated to
+                the HPO term Cerebral palsy (%s; n=%d), Spasticity (%s; n=%d), Hypertonia (%s; n=%d), Dystonia (%s; %d), Ataxia (%s; n=%d), or Neurodevelopmental delay (%s; n=%d). In each case, diseases annotated to either one of these terms or to
+                a more specific descendent of the terms were included. This corresponded to a total of %d genes (the total is less than the sum of the genes associated with each HPO terms because of overlaps).
+                """, cerebralPalsy.getValue(), n_cp,
+                    spasticity.getValue(), n_spasticity,
+                hypertonia.getValue(), n_hypertonia,
+                dystonia.getValue(), n_dystonia,
+                ataxia.getValue(), n_ataxia,
+                neurodevDelay.getValue(), n_neurodev,
+                neurodevDiseases.size());
+        System.out.println(breakdown);
+
         String outpath = "CpCandidateDiseasesAndGenes.txt";
         int diseasesWithoutGenes = 0; // expected that not all diseases have genes, but let's count them
+        Set<String> allGeneSymbolSet = new HashSet<>();
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(outpath))) {
-            bw.write("Name\tidentifier\n");
+            bw.write("Name\tidentifier\tsymbol\n");
             for (TermId tid : neurodevDiseases) {
                 String label = diseaseMap.get(tid);
                 if (omim2symbol.containsKey(tid)) {
-                    bw.write(String.format("%s\t%s\t%s\n", label, tid.getValue(), omim2symbol.get(tid)));
+                    String symbol = omim2symbol.get(tid);
+                    allGeneSymbolSet.add(symbol);
+                    bw.write(String.format("%s\t%s\t%s\n", label, tid.getValue(), symbol));
                 } else {
                     diseasesWithoutGenes++;
                 }
@@ -111,6 +129,8 @@ public class CpCommand  extends HPOCommand implements Callable<Integer> {
             System.err.println(e.getMessage());
         }
         System.out.printf("Could not retrieve gene symbol for %d diseases.\n", diseasesWithoutGenes);
+        System.out.printf("Total unique genes: %d.\n", allGeneSymbolSet.size());
+
         return 0;
     }
 
