@@ -45,4 +45,12 @@ public abstract class HPOCommand {
         return OntologyLoader.loadOntology(f);
     }
 
+    protected File getAnnotFile() {
+        File f = new File(annotpath);
+        if (! f.isFile()) {
+            throw new PhenolRuntimeException("Could not find annotation file at " + annotpath);
+        }
+        return f;
+    }
+
 }

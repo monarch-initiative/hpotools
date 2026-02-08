@@ -102,8 +102,8 @@ public class SimHpoCommand extends HPOCommand implements Callable<Integer> {
                     System.err.println("Error writing file: " + e.getMessage());
                 }
             } else {
-                System.out.println("Could not retrieve phenopacket for \"" + count + "\"");
-                System.out.println("NEED TO IMPLEMENT generateSimulatedPhenopacket()");
+                System.err.println("[ERROR] Could not generate simulated phenopacket");
+                System.exit(1);
             }
             count++;
         }
