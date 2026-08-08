@@ -21,6 +21,7 @@ public class Main implements Callable<Integer> {
                     .addSubcommand("dist", new HpoDistCommand())
                     .addSubcommand("download", new DownloadCommand())
                     .addSubcommand("encoding", new EncodingCommand())
+                    .addSubcommand("hpoadjust", new HpoaAdjustCommand())
                     .addSubcommand("maxo", new MaxoCommand())
                     .addSubcommand("mondo", new MondoCommand())
                     .addSubcommand("onset", new OnsetCommand())
