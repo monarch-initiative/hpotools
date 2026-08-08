@@ -2,10 +2,13 @@ package org.monarchinitiative.hpotools.cmd;
 
 import org.monarchinitiative.hpotools.analysis.hpoadjust.CaseResult;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.CaseStatus;
+import org.monarchinitiative.hpotools.analysis.hpoadjust.CohortSource;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.HpoaAdjuster;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.HpoaFile;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.PhenopacketCase;
+import org.monarchinitiative.hpotools.analysis.hpoadjust.PhenopacketStoreCohorts;
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
+import org.monarchinitiative.phenol.ontology.data.Ontology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -35,6 +38,10 @@ public class HpoaAdjustCommand extends HPOCommand implements Callable<Integer> {
             description = "directory for adjusted HPOA files (default: ${DEFAULT-VALUE})")
     private Path outputDirectory = Path.of("hpoa-adjusted");
 
+    @CommandLine.Option(names = {"-s", "--store"},
+            description = "phenopacket-store directory; enables cohort-count subtraction for multi-reference lines (requires --hpo)")
+    private Path phenopacketStorePath;
+
     @Override
     public Integer call() {
         Path hpoaPath = Path.of(annotpath);
@@ -49,11 +56,24 @@ public class HpoaAdjustCommand extends HPOCommand implements Callable<Integer> {
         }
         HpoaFile hpoa = HpoaFile.parse(hpoaPath);
         LOGGER.info("Parsed {} annotation lines from {}", hpoa.annotationCount(), hpoaPath);
-        HpoaAdjuster adjuster = new HpoaAdjuster(hpoa);
+        HpoaAdjuster adjuster = new HpoaAdjuster(hpoa, cohortSource());
         List<CaseResult> results = adjuster.adjustAll(cases, outputDirectory);
         writeSummary(results);
         logStatusCounts(results);
         return 0;
+    }
+
+    private CohortSource cohortSource() {
+        if (phenopacketStorePath == null) {
+            LOGGER.info("No phenopacket store given, multi-reference lines citing a target PMID will be dropped");
+            return CohortSource.empty();
+        }
+        if (!Files.isDirectory(phenopacketStorePath)) {
+            throw new PhenolRuntimeException("Not a directory: " + phenopacketStorePath);
+        }
+        Ontology ontology = getHpOntology();
+        return PhenopacketStoreCohorts.load(phenopacketStorePath,
+                termId -> ontology.getAncestorTermIds(termId, true));
     }
 
     private List<PhenopacketCase> collectCases() {
@@ -90,7 +110,8 @@ public class HpoaAdjustCommand extends HPOCommand implements Callable<Integer> {
         Path summaryPath = outputDirectory.resolve("adjustment_summary.tsv");
         try (BufferedWriter writer = Files.newBufferedWriter(summaryPath)) {
             writer.write(String.join("\t", "phenopacket_id", "pmid", "disease_id", "status",
-                    "lines_removed_disease", "lines_removed_total", "multireference_lines_removed",
+                    "lines_removed_disease", "lines_subtracted_disease", "lines_removed_total",
+                    "lines_subtracted_total", "undecomposable_lines_removed",
                     "remaining_phenotype_lines", "adjusted_hpoa"));
             writer.newLine();
             for (CaseResult result : results) {
@@ -100,8 +121,10 @@ public class HpoaAdjustCommand extends HPOCommand implements Callable<Integer> {
                         result.phenopacketCase().diseaseId().getValue(),
                         result.status().name(),
                         String.valueOf(result.linesRemovedForDisease()),
+                        String.valueOf(result.linesSubtractedForDisease()),
                         String.valueOf(result.linesRemovedTotal()),
-                        String.valueOf(result.multiReferenceLinesRemoved()),
+                        String.valueOf(result.linesSubtractedTotal()),
+                        String.valueOf(result.undecomposableLinesRemoved()),
                         String.valueOf(result.remainingPhenotypeLines()),
                         result.adjustedHpoa().map(Path::toString).orElse("-")));
                 writer.newLine();

@@ -20,9 +20,21 @@ public class HpoaAdjuster {
     private static final Logger LOGGER = LoggerFactory.getLogger(HpoaAdjuster.class);
 
     private final HpoaFile hpoa;
+    private final CohortSource cohortSource;
 
     public HpoaAdjuster(HpoaFile hpoa) {
+        this(hpoa, CohortSource.empty());
+    }
+
+    public HpoaAdjuster(HpoaFile hpoa, CohortSource cohortSource) {
         this.hpoa = hpoa;
+        this.cohortSource = cohortSource;
+    }
+
+    private record FileAdjustment(HpoaFile adjusted,
+                                  List<HpoaAnnotationLine> removedLines,
+                                  List<HpoaAnnotationLine> subtractedLines,
+                                  int undecomposableRemoved) {
     }
 
     public List<CaseResult> adjustAll(List<PhenopacketCase> cases, Path outputDirectory) {
@@ -36,38 +48,73 @@ public class HpoaAdjuster {
         List<CaseResult> results = new ArrayList<>();
         for (Map.Entry<TermId, List<PhenopacketCase>> entry : casesByPmid.entrySet()) {
             TermId pmid = entry.getKey();
-            List<HpoaAnnotationLine> removedLines = hpoa.linesCiting(pmid);
-            HpoaFile adjusted = hpoa.withoutPmid(pmid);
+            FileAdjustment adjustment = adjustFile(pmid);
             Optional<Path> outputFile = Optional.empty();
-            if (!removedLines.isEmpty()) {
+            if (!adjustment.removedLines().isEmpty() || !adjustment.subtractedLines().isEmpty()) {
                 Path path = outputDirectory.resolve(fileNameFor(pmid));
-                adjusted.write(path);
+                adjustment.adjusted().write(path);
                 outputFile = Optional.of(path);
-                LOGGER.info("Removed {} lines citing {} and wrote {}", removedLines.size(), pmid, path);
+                LOGGER.info("{}: removed {} lines, subtracted cohort counts from {} lines, wrote {}",
+                        pmid, adjustment.removedLines().size(), adjustment.subtractedLines().size(), path);
             } else {
                 LOGGER.info("{} is not cited in the HPOA, no adjusted file needed", pmid);
             }
             for (PhenopacketCase phenopacketCase : entry.getValue()) {
-                results.add(evaluateCase(phenopacketCase, adjusted, removedLines, outputFile));
+                results.add(evaluateCase(phenopacketCase, adjustment, outputFile));
             }
         }
         return results;
     }
 
+    private FileAdjustment adjustFile(TermId pmid) {
+        List<HpoaAnnotationLine> retained = new ArrayList<>();
+        List<HpoaAnnotationLine> removed = new ArrayList<>();
+        List<HpoaAnnotationLine> subtracted = new ArrayList<>();
+        int undecomposable = 0;
+        for (HpoaAnnotationLine line : hpoa.annotationLines()) {
+            if (!line.cites(pmid)) {
+                retained.add(line);
+                continue;
+            }
+            if (!line.hasMultipleReferences()) {
+                removed.add(line);
+                continue;
+            }
+            Optional<HpoaAnnotationLine> decomposed = subtractCohort(line, pmid);
+            if (decomposed.isPresent()) {
+                retained.add(decomposed.get());
+                subtracted.add(line);
+            } else {
+                removed.add(line);
+                undecomposable++;
+            }
+        }
+        return new FileAdjustment(new HpoaFile(hpoa.headerLines(), retained), removed, subtracted, undecomposable);
+    }
+
+    private Optional<HpoaAnnotationLine> subtractCohort(HpoaAnnotationLine line, TermId pmid) {
+        Optional<Ratio> frequency = line.frequencyRatio();
+        Optional<CohortCounts> counts = cohortSource.lookup(line.diseaseId(), pmid);
+        if (frequency.isEmpty() || counts.isEmpty()) {
+            return Optional.empty();
+        }
+        Ratio adjusted = frequency.get()
+                .minus(counts.get().countOf(line.hpoId()), counts.get().cohortSize());
+        if (!adjusted.isInformative()) {
+            return Optional.empty();
+        }
+        return Optional.of(line.withCohortSubtracted(pmid, adjusted));
+    }
+
     private CaseResult evaluateCase(PhenopacketCase phenopacketCase,
-                                    HpoaFile adjusted,
-                                    List<HpoaAnnotationLine> removedLines,
+                                    FileAdjustment adjustment,
                                     Optional<Path> outputFile) {
         TermId diseaseId = phenopacketCase.diseaseId();
-        int removedForDisease = (int) removedLines.stream()
-                .filter(line -> line.diseaseId().equals(diseaseId))
-                .count();
-        int multiReferenceRemoved = (int) removedLines.stream()
-                .filter(HpoaAnnotationLine::hasMultipleReferences)
-                .count();
-        long remainingPhenotypeLines = adjusted.phenotypeLineCount(diseaseId);
+        int removedForDisease = countForDisease(adjustment.removedLines(), diseaseId);
+        int subtractedForDisease = countForDisease(adjustment.subtractedLines(), diseaseId);
+        long remainingPhenotypeLines = adjustment.adjusted().phenotypeLineCount(diseaseId);
         CaseStatus status;
-        if (removedForDisease == 0) {
+        if (removedForDisease == 0 && subtractedForDisease == 0) {
             status = CaseStatus.NO_PMID_EVIDENCE;
         } else if (remainingPhenotypeLines == 0) {
             status = CaseStatus.INSUFFICIENT_DATA;
@@ -76,8 +123,15 @@ public class HpoaAdjuster {
         } else {
             status = CaseStatus.ADJUSTED;
         }
-        return new CaseResult(phenopacketCase, status, removedForDisease, removedLines.size(),
-                multiReferenceRemoved, remainingPhenotypeLines, outputFile);
+        return new CaseResult(phenopacketCase, status, removedForDisease, subtractedForDisease,
+                adjustment.removedLines().size(), adjustment.subtractedLines().size(),
+                adjustment.undecomposableRemoved(), remainingPhenotypeLines, outputFile);
+    }
+
+    private static int countForDisease(List<HpoaAnnotationLine> lines, TermId diseaseId) {
+        return (int) lines.stream()
+                .filter(line -> line.diseaseId().equals(diseaseId))
+                .count();
     }
 
     static String fileNameFor(TermId pmid) {
