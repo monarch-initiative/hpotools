@@ -1,0 +1,13 @@
+#description: "HPO annotations for rare diseases [test fixture]"
+#version: 2026-06-23
+#tracker: https://github.com/obophenotype/human-phenotype-ontology/issues
+#hpo-version: http://purl.obolibrary.org/obo/hp/releases/2026-06-23/hp.json
+database_id	disease_name	qualifier	hpo_id	reference	evidence	onset	frequency	sex	modifier	aspect	biocuration
+OMIM:615513	Immunodeficiency 14		HP:0005425	PMID:24165795	PCS		2/2			P	HPO:probinson[2014-02-03]
+OMIM:615513	Immunodeficiency 14		HP:0005403	PMID:24136356	PCS		9/9			P	HPO:probinson[2014-02-03]
+OMIM:615513	Immunodeficiency 14		HP:0002205	PMID:24136356;PMID:24165795	PCS		15/17			P	HPO:probinson[2014-02-03]
+OMIM:615513	Immunodeficiency 14		HP:0000006	PMID:24136356	PCS					I	HPO:probinson[2014-02-03]
+OMIM:616576	Immunodeficiency 45		HP:0004313	PMID:29403474	PCS		4/4			P	HPO:skoehler[2018-03-01]
+OMIM:616576	Immunodeficiency 45		HP:0000006	PMID:29403474	PCS					I	HPO:skoehler[2018-03-01]
+OMIM:603597	Autoinflammatory syndrome		HP:0001945	OMIM:603597	TAS					P	HPO:iea[2009-02-17]
+OMIM:603597	Autoinflammatory syndrome		HP:0002960	PMID:33087723	PCS		5/6			P	HPO:probinson[2021-01-15]
