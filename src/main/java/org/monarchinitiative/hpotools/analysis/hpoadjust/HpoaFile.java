@@ -16,7 +16,7 @@ public class HpoaFile {
     private final List<String> headerLines;
     private final List<HpoaAnnotationLine> annotationLines;
 
-    private HpoaFile(List<String> headerLines, List<HpoaAnnotationLine> annotationLines) {
+    HpoaFile(List<String> headerLines, List<HpoaAnnotationLine> annotationLines) {
         this.headerLines = List.copyOf(headerLines);
         this.annotationLines = List.copyOf(annotationLines);
     }
@@ -62,6 +62,10 @@ public class HpoaFile {
                 .filter(line -> line.diseaseId().equals(diseaseId))
                 .filter(HpoaAnnotationLine::isPhenotypeAnnotation)
                 .count();
+    }
+
+    public List<HpoaAnnotationLine> annotationLines() {
+        return annotationLines;
     }
 
     public List<String> headerLines() {
