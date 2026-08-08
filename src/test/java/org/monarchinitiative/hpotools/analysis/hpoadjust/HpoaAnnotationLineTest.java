@@ -46,6 +46,24 @@ public class HpoaAnnotationLineTest {
     }
 
     @Test
+    public void frequencyRatioParsesCounts() {
+        assertEquals(java.util.Optional.of(new Ratio(1, 2)), HpoaAnnotationLine.of(SINGLE_REF_LINE).frequencyRatio());
+        String withoutFrequency = SINGLE_REF_LINE.replace("\t1/2\t", "\t\t");
+        assertTrue(HpoaAnnotationLine.of(withoutFrequency).frequencyRatio().isEmpty());
+    }
+
+    @Test
+    public void withCohortSubtractedRewritesFrequencyAndReferences() {
+        HpoaAnnotationLine line = HpoaAnnotationLine.of(MULTI_REF_LINE);
+        HpoaAnnotationLine subtracted = line.withCohortSubtracted(TermId.of("PMID:16517541"), new Ratio(6, 6));
+        assertEquals(List.of(TermId.of("PMID:10835631")), subtracted.references());
+        assertEquals("6/6", subtracted.frequency());
+        assertEquals(line.diseaseId(), subtracted.diseaseId());
+        assertEquals(line.hpoId(), subtracted.hpoId());
+        assertEquals(line.aspect(), subtracted.aspect());
+    }
+
+    @Test
     public void malformedLineThrows() {
         assertThrows(PhenolRuntimeException.class, () -> HpoaAnnotationLine.of("OMIM:619340\tonly\tfour\tfields"));
     }

@@ -8,18 +8,22 @@ import org.monarchinitiative.phenol.ontology.data.TermId;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HpoaAdjusterTest {
 
+    private static HpoaFile hpoa;
     private static HpoaAdjuster adjuster;
 
     @BeforeAll
     public static void init() throws Exception {
         Path path = Path.of(HpoaAdjusterTest.class.getResource("/hpoadjust/small_phenotype.hpoa").toURI());
-        adjuster = new HpoaAdjuster(HpoaFile.parse(path));
+        hpoa = HpoaFile.parse(path);
+        adjuster = new HpoaAdjuster(hpoa);
     }
 
     private static PhenopacketCase caseOf(String id, String diseaseId, String pmid) {
@@ -35,7 +39,8 @@ public class HpoaAdjusterTest {
         assertEquals(CaseStatus.ADJUSTED, result.status());
         assertEquals(3, result.linesRemovedForDisease());
         assertEquals(3, result.linesRemovedTotal());
-        assertEquals(1, result.multiReferenceLinesRemoved());
+        assertEquals(0, result.linesSubtractedTotal());
+        assertEquals(1, result.undecomposableLinesRemoved());
         assertEquals(1, result.remainingPhenotypeLines());
         assertTrue(result.adjustedHpoa().isPresent());
         assertTrue(Files.isRegularFile(result.adjustedHpoa().get()));
@@ -82,6 +87,49 @@ public class HpoaAdjusterTest {
         HpoaFile reloaded = HpoaFile.parse(results.get(0).adjustedHpoa().get());
         assertTrue(reloaded.linesCiting(TermId.of("PMID:24136356")).isEmpty());
         assertEquals(5, reloaded.annotationCount());
+    }
+
+    @Test
+    public void multiReferenceLineIsSubtractedWhenCohortIsKnown(@TempDir Path tempDir) {
+        TermId disease = TermId.of("OMIM:615513");
+        TermId pmid = TermId.of("PMID:24136356");
+        TermId sharedTerm = TermId.of("HP:0002205");
+        CohortSource source = (diseaseId, target) ->
+                diseaseId.equals(disease) && target.equals(pmid)
+                        ? Optional.of(new CohortCounts(Map.of(sharedTerm, 12), 14))
+                        : Optional.empty();
+        HpoaAdjuster subtracting = new HpoaAdjuster(hpoa, source);
+        List<CaseResult> results = subtracting.adjustAll(
+                List.of(caseOf("PMID_24136356_P10", "OMIM:615513", "PMID:24136356")), tempDir);
+        CaseResult result = results.get(0);
+        assertEquals(CaseStatus.ADJUSTED, result.status());
+        assertEquals(2, result.linesRemovedForDisease());
+        assertEquals(1, result.linesSubtractedForDisease());
+        assertEquals(0, result.undecomposableLinesRemoved());
+        assertEquals(2, result.remainingPhenotypeLines());
+
+        HpoaFile reloaded = HpoaFile.parse(result.adjustedHpoa().get());
+        assertTrue(reloaded.linesCiting(pmid).isEmpty());
+        HpoaAnnotationLine subtractedLine = reloaded.annotationLines().stream()
+                .filter(line -> line.hpoId().equals(sharedTerm))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(Optional.of(new Ratio(3, 3)), subtractedLine.frequencyRatio());
+        assertEquals(List.of(TermId.of("PMID:24165795")), subtractedLine.references());
+    }
+
+    @Test
+    public void subtractionThatZeroesTheLineRemovesIt(@TempDir Path tempDir) {
+        TermId sharedTerm = TermId.of("HP:0002205");
+        CohortSource source = (diseaseId, target) ->
+                Optional.of(new CohortCounts(Map.of(sharedTerm, 15), 17));
+        HpoaAdjuster subtracting = new HpoaAdjuster(hpoa, source);
+        List<CaseResult> results = subtracting.adjustAll(
+                List.of(caseOf("PMID_24136356_P10", "OMIM:615513", "PMID:24136356")), tempDir);
+        CaseResult result = results.get(0);
+        assertEquals(3, result.linesRemovedForDisease());
+        assertEquals(0, result.linesSubtractedForDisease());
+        assertEquals(1, result.remainingPhenotypeLines());
     }
 
     @Test
