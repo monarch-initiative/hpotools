@@ -30,7 +30,7 @@ public record PhenopacketCase(String phenopacketId, TermId diseaseId, TermId pmi
         return new PhenopacketCase(phenopacket.getId(), diseaseId, pmid, path);
     }
 
-    private static Optional<TermId> extractPmid(Phenopacket phenopacket) {
+    static Optional<TermId> extractPmid(Phenopacket phenopacket) {
         return phenopacket.getMetaData().getExternalReferencesList().stream()
                 .map(ExternalReference::getId)
                 .filter(id -> id.startsWith("PMID:"))
@@ -38,7 +38,7 @@ public record PhenopacketCase(String phenopacketId, TermId diseaseId, TermId pmi
                 .map(TermId::of);
     }
 
-    private static Optional<TermId> extractDiseaseId(Phenopacket phenopacket) {
+    static Optional<TermId> extractDiseaseId(Phenopacket phenopacket) {
         Optional<String> fromInterpretation = phenopacket.getInterpretationsList().stream()
                 .map(Interpretation::getDiagnosis)
                 .map(diagnosis -> diagnosis.getDisease().getId())
