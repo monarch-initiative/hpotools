@@ -1,0 +1,46 @@
+{
+  "id": "PMID_24136356_P10",
+  "subject": {
+    "id": "P10",
+    "sex": "MALE"
+  },
+  "phenotypicFeatures": [
+    {
+      "type": {
+        "id": "HP:0005403",
+        "label": "Recurrent sinopulmonary infections"
+      }
+    }
+  ],
+  "interpretations": [
+    {
+      "id": "interpretation-1",
+      "progressStatus": "SOLVED",
+      "diagnosis": {
+        "disease": {
+          "id": "OMIM:615513",
+          "label": "Immunodeficiency 14"
+        }
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "OMIM:615513",
+        "label": "Immunodeficiency 14"
+      }
+    }
+  ],
+  "metaData": {
+    "created": "2026-07-31T17:30:49.343370Z",
+    "createdBy": "0009-0004-8124-8864",
+    "phenopacketSchemaVersion": "2",
+    "externalReferences": [
+      {
+        "id": "PMID:24136356",
+        "description": "Dominant-activating germline mutations in the gene encoding the PI(3)K catalytic subunit p110delta"
+      }
+    ]
+  }
+}
