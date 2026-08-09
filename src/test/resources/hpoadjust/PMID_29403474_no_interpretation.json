@@ -1,0 +1,34 @@
+{
+  "id": "PMID_29403474_Fam089_I1",
+  "subject": {
+    "id": "Fam089_I1",
+    "sex": "FEMALE"
+  },
+  "phenotypicFeatures": [
+    {
+      "type": {
+        "id": "HP:0004313",
+        "label": "Decreased circulating antibody concentration"
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "OMIM:616576",
+        "label": "Immunodeficiency 45"
+      }
+    }
+  ],
+  "metaData": {
+    "created": "2026-07-31T17:30:49.343370Z",
+    "createdBy": "0009-0004-8124-8864",
+    "phenopacketSchemaVersion": "2",
+    "externalReferences": [
+      {
+        "id": "PMID:29403474",
+        "description": "Comprehensive multicentre study on NFKB1 haploinsufficiency"
+      }
+    ]
+  }
+}
