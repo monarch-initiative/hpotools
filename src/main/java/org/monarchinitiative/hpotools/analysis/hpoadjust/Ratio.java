@@ -16,6 +16,10 @@ public record Ratio(int numerator, int denominator) {
         return Optional.of(new Ratio(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2))));
     }
 
+    public Ratio plus(Ratio other) {
+        return new Ratio(numerator + other.numerator, denominator + other.denominator);
+    }
+
     public Ratio minus(int numerator, int denominator) {
         return new Ratio(this.numerator - numerator, this.denominator - denominator);
     }

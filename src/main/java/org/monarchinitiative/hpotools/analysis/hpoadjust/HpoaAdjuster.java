@@ -66,6 +66,10 @@ public class HpoaAdjuster {
         return results;
     }
 
+    public HpoaFile adjustFor(TermId pmid) {
+        return adjustFile(pmid).adjusted();
+    }
+
     private FileAdjustment adjustFile(TermId pmid) {
         List<HpoaAnnotationLine> retained = new ArrayList<>();
         List<HpoaAnnotationLine> removed = new ArrayList<>();

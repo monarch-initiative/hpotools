@@ -1,14 +1,16 @@
 package org.monarchinitiative.hpotools.cmd;
 
+import org.monarchinitiative.hpotools.analysis.hpoadjust.AugmentedHpoa;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.CaseResult;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.CaseStatus;
-import org.monarchinitiative.hpotools.analysis.hpoadjust.CohortSource;
+import org.monarchinitiative.hpotools.analysis.hpoadjust.DiseaseAugmentation;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.HpoaAdjuster;
+import org.monarchinitiative.hpotools.analysis.hpoadjust.HpoaAugmenter;
 import org.monarchinitiative.hpotools.analysis.hpoadjust.HpoaFile;
-import org.monarchinitiative.hpotools.analysis.hpoadjust.PhenopacketCase;
-import org.monarchinitiative.hpotools.analysis.hpoadjust.PhenopacketStoreCohorts;
+import org.monarchinitiative.hpotools.analysis.hpoadjust.PhenopacketCollection;
 import org.monarchinitiative.phenol.base.PhenolRuntimeException;
 import org.monarchinitiative.phenol.ontology.data.Ontology;
+import org.monarchinitiative.phenol.ontology.data.TermId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -17,14 +19,15 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.stream.Stream;
 
 @CommandLine.Command(name = "hpoadjust",
         mixinStandardHelpOptions = true,
-        description = "Remove PMID-derived annotations from the HPOA for phenopacket-based benchmarking")
+        description = "Adjust the HPOA for phenopacket-based benchmarking: add the annotations of a curated "
+                + "cohort and remove the contribution of the publication a benchmarked case comes from")
 public class HpoaAdjustCommand extends HPOCommand implements Callable<Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HpoaAdjustCommand.class);
@@ -38,9 +41,13 @@ public class HpoaAdjustCommand extends HPOCommand implements Callable<Integer> {
             description = "directory for adjusted HPOA files (default: ${DEFAULT-VALUE})")
     private Path outputDirectory = Path.of("hpoa-adjusted");
 
-    @CommandLine.Option(names = {"-s", "--store"},
-            description = "phenopacket-store directory; enables cohort-count subtraction for multi-reference lines (requires --hpo)")
-    private Path phenopacketStorePath;
+    @CommandLine.Option(names = {"--augment"},
+            description = "add the cohort annotations to the HPOA before removing the per-case publication")
+    private boolean augment;
+
+    @CommandLine.Option(names = {"--biocuration"},
+            description = "biocuration tag written to generated annotations (default: ${DEFAULT-VALUE})")
+    private String biocurationTag = "HPO:esid4hpo";
 
     @Override
     public Integer call() {
@@ -49,61 +56,65 @@ public class HpoaAdjustCommand extends HPOCommand implements Callable<Integer> {
             LOGGER.error("Could not find phenotype.hpoa at {}", hpoaPath);
             return 1;
         }
-        List<PhenopacketCase> cases = collectCases();
-        if (cases.isEmpty()) {
+        Ontology ontology = getHpOntology();
+        PhenopacketCollection cohort = PhenopacketCollection.load(phenopacketPath,
+                termId -> ancestors(ontology, termId));
+        if (cohort.isEmpty()) {
             LOGGER.error("No phenopackets found at {}", phenopacketPath);
             return 1;
         }
         HpoaFile hpoa = HpoaFile.parse(hpoaPath);
         LOGGER.info("Parsed {} annotation lines from {}", hpoa.annotationCount(), hpoaPath);
-        HpoaAdjuster adjuster = new HpoaAdjuster(hpoa, cohortSource());
-        List<CaseResult> results = adjuster.adjustAll(cases, outputDirectory);
+
+        try {
+            Files.createDirectories(outputDirectory);
+        } catch (IOException e) {
+            throw new PhenolRuntimeException("Could not create output directory " + outputDirectory + ": " + e.getMessage());
+        }
+        if (augment) {
+            AugmentedHpoa augmented = new HpoaAugmenter(cohort, biocuration()).augment(hpoa);
+            hpoa = augmented.hpoa();
+            writeAugmentationSummary(augmented.augmentations());
+            hpoa.write(outputDirectory.resolve("phenotype_augmented.hpoa"));
+            LOGGER.info("Augmented HPOA has {} annotation lines", hpoa.annotationCount());
+        }
+
+        List<CaseResult> results = new HpoaAdjuster(hpoa, cohort).adjustAll(cohort.cases(), outputDirectory);
         writeSummary(results);
         logStatusCounts(results);
         return 0;
     }
 
-    private CohortSource cohortSource() {
-        if (phenopacketStorePath == null) {
-            LOGGER.info("No phenopacket store given, multi-reference lines citing a target PMID will be dropped");
-            return CohortSource.empty();
-        }
-        if (!Files.isDirectory(phenopacketStorePath)) {
-            throw new PhenolRuntimeException("Not a directory: " + phenopacketStorePath);
-        }
-        Ontology ontology = getHpOntology();
-        return PhenopacketStoreCohorts.load(phenopacketStorePath,
-                termId -> ontology.getAncestorTermIds(termId, true));
+    private static Set<TermId> ancestors(Ontology ontology, TermId termId) {
+        return ontology.containsTerm(termId)
+                ? ontology.getAncestorTermIds(termId, true)
+                : Set.of(termId);
     }
 
-    private List<PhenopacketCase> collectCases() {
-        List<Path> files = phenopacketFiles();
-        List<PhenopacketCase> cases = new ArrayList<>();
-        for (Path file : files) {
-            try {
-                cases.add(PhenopacketCase.fromFile(file));
-            } catch (PhenolRuntimeException e) {
-                LOGGER.warn("Skipping {}: {}", file, e.getMessage());
+    private String biocuration() {
+        return biocurationTag + "[" + LocalDate.now() + "]";
+    }
+
+    private void writeAugmentationSummary(List<DiseaseAugmentation> augmentations) {
+        Path summaryPath = outputDirectory.resolve("augmentation_summary.tsv");
+        try (BufferedWriter writer = Files.newBufferedWriter(summaryPath)) {
+            writer.write(String.join("\t", "disease_id", "cohort_size", "cohort_pmids",
+                    "annotations_added", "annotations_pooled", "annotations_superseded"));
+            writer.newLine();
+            for (DiseaseAugmentation augmentation : augmentations) {
+                writer.write(String.join("\t",
+                        augmentation.diseaseId().getValue(),
+                        String.valueOf(augmentation.cohortSize()),
+                        augmentation.cohortPmids().stream().map(TermId::getValue).reduce((a, b) -> a + ";" + b).orElse(""),
+                        String.valueOf(augmentation.linesAdded()),
+                        String.valueOf(augmentation.linesPooled()),
+                        String.valueOf(augmentation.linesSuperseded())));
+                writer.newLine();
             }
-        }
-        return cases;
-    }
-
-    private List<Path> phenopacketFiles() {
-        if (Files.isRegularFile(phenopacketPath)) {
-            return List.of(phenopacketPath);
-        }
-        if (!Files.isDirectory(phenopacketPath)) {
-            throw new PhenolRuntimeException("Not a file or directory: " + phenopacketPath);
-        }
-        try (Stream<Path> paths = Files.walk(phenopacketPath)) {
-            return paths.filter(Files::isRegularFile)
-                    .filter(path -> path.getFileName().toString().endsWith(".json"))
-                    .sorted()
-                    .toList();
         } catch (IOException e) {
-            throw new PhenolRuntimeException("Could not read " + phenopacketPath + ": " + e.getMessage());
+            throw new PhenolRuntimeException("Could not write summary to " + summaryPath + ": " + e.getMessage());
         }
+        LOGGER.info("Wrote augmentation summary to {}", summaryPath);
     }
 
     private void writeSummary(List<CaseResult> results) {

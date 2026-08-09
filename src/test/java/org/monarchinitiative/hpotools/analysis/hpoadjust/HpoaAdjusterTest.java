@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,7 +28,8 @@ public class HpoaAdjusterTest {
     }
 
     private static PhenopacketCase caseOf(String id, String diseaseId, String pmid) {
-        return new PhenopacketCase(id, TermId.of(diseaseId), TermId.of(pmid), Path.of(id + ".json"));
+        return new PhenopacketCase(id, TermId.of(diseaseId), "test disease", TermId.of(pmid),
+                Set.of(), Path.of(id + ".json"));
     }
 
     @Test
